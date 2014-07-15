@@ -4,7 +4,7 @@
  * Plugin URI: http://plugins.svn.wordpress.org/woocommerce-fortnox-integration/
  * Description: A Fortnox 3 API Interface. Synchronizes products, orders and more to fortnox
  * Version: 1.2
- * Author: Tomas Kircher
+ * Author: Kircher Rode & Wiberg
  * Author URI: http://kircherrodewiberg.se
  * License: GPL2
  */
