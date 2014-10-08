@@ -1,8 +1,9 @@
 <?php
 /**
- * Plugin Name: WooCommerce Fortnox Integration
+ * Plugin Name: WooCommerce Fortnox Integration Extended
  * Plugin URI: http://plugins.svn.wordpress.org/woocommerce-fortnox-integration/
- * Description: A Fortnox 3 API Interface. Synchronizes products, orders and more to fortnox
+ * Description: A Fortnox 3 API Interface. Synchronizes products, orders and more to fortnox.
+ * Also fetches inventory from fortnox and updates WooCommerce
  * Version: 1.2
  * Author: Kircher Rode & Wiberg
  * Author URI: http://kircherrodewiberg.se
@@ -11,7 +12,14 @@
 
 if ( ! function_exists( 'logthis' ) ) {
     function logthis($msg) {
-        $fileobject = fopen('/tmp/testlog.log', 'a');
+        if(!file_exists('/tmp/testlog.log')){
+            $fileobject = fopen('/tmp/testlog.log', 'a');
+            chmod('/tmp/testlog.log', 0666);
+        }
+        else{
+            $fileobject = fopen('/tmp/testlog.log', 'a');
+        }
+
         if(is_array($msg || is_object($msg))){
             fwrite($fileobject,print_r($msg, true));
         }
@@ -35,13 +43,13 @@ if(!defined('PLUGIN_PATH')){
 
 if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
 
-    load_plugin_textdomain( 'wc_fortnox', false, dirname( plugin_basename( __FILE__ ) ) . '/' );
-    if ( ! class_exists( 'WC_Fortnox' ) ) {
+    load_plugin_textdomain( 'wc_fortnox_extended', false, dirname( plugin_basename( __FILE__ ) ) . '/' );
+    if ( ! class_exists( 'WCFortnoxExtended' ) ) {
 
         // in javascript, object properties are accessed as ajax_object.ajax_url, ajax_object.we_value
         function fortnox_enqueue(){
             wp_enqueue_script('jquery');
-            wp_register_script( 'fortnox-script', plugins_url( '/woocommerce-fortnox3/js/fortnox.js' ) );
+            wp_register_script( 'fortnox-script', plugins_url( '/woocommerce_fortnox_integration_extended/js/fortnox.js' ) );
             wp_enqueue_script( 'fortnox-script' );
         }
 
@@ -51,7 +59,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
         function initial_sync_products_callback() {
             global $wpdb; // this is how you get access to the database
 
-            $fnox = new WC_Fortnox();
+            $fnox = new WCFortnoxExtended();
             if($fnox->initial_products_sync()){
                 echo "Produkter är synkroniserade utan problem.";
             }
@@ -65,7 +73,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 
         function sync_orders_callback() {
             global $wpdb; // this is how you get access to the database
-            $fnox = new WC_Fortnox();
+            $fnox = new WCFortnoxExtended();
 
             if($fnox->sync_orders_to_fortnox()){
                 echo "Ordrar är synkroniserade utan problem.";
@@ -80,23 +88,23 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 
         function fetch_contacts_callback() {
             global $wpdb; // this is how you get access to the database
-            $fnox = new WC_Fortnox();
+            $fnox = new WCFortnoxExtended();
             $fnox->fetch_fortnox_contacts();
             echo "Kontakter är synkroniserade utan problem.";
             die(); // this is required to return a proper result
         }
-
         /**
          * Localisation
          **/
         load_plugin_textdomain( 'wc_fortnox', false, dirname( plugin_basename( __FILE__ ) ) . '/' );
 
-        class WC_Fortnox {
+        class WCFortnoxExtended {
 
             private $general_settings_key = 'woocommerce_fortnox_general_settings';
             private $accounting_settings_key = 'woocommerce_fortnox_accounting_settings';
             private $order_settings_key = 'woocommerce_fortnox_order_settings';
             private $support_key = 'woocommerce_fortnox_support';
+//            private $manual_action_key = 'woocommerce_fortnox_manual_action';
             private $general_settings;
             private $accounting_settings;
             private $plugin_options_key = 'woocommerce_fortnox_options';
@@ -108,7 +116,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                 add_action( 'init', array( &$this, 'load_settings' ) );
                 add_action( 'admin_init', array( &$this, 'register_woocommerce_fortnox_general_settings' ));
                 add_action( 'admin_init', array( &$this, 'register_woocommerce_fortnox_order_settings' ));
-                //add_action( 'admin_init', array( &$this, 'register_woocommerce_fortnox_accounting_settings' ));
+//                add_action( 'admin_init', array( &$this, 'register_woocommerce_fortnox_manual_action' ));
                 add_action( 'admin_init', array( &$this, 'register_woocommerce_fortnox_support' ));
                 add_action( 'admin_menu', array( &$this, 'add_admin_menus' ) );
 
@@ -230,15 +238,15 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
              */
             function plugin_options_tabs() {
                 $current_tab = isset( $_GET['tab'] ) ? $_GET['tab'] : $this->general_settings_key;
-                echo '<div class="wrap"><h2>Fortnox WooCommerce</h2><div id="icon-edit" class="icon32"></div></div>';
-
                 $options = get_option('woocommerce_fortnox_general_settings');
+                echo '<div class="wrap"><h2>Fortnox WooCommerce</h2><div id="icon-edit" class="icon32"></div></div>';
                 if(!isset($options['api-key']) || $options['api-key'] == ''){
                     echo "<button type=\"button button-primary\" class=\"button button-primary\" title=\"\" style=\"margin:5px\" onclick=\"window.open('http://wp-plugs.com','_blank');\">Hämta API-Nyckel</button>";
                 }
                 echo '<button type="button" class="button" title="Manuell Synkning" style="margin:5px" onclick="fetch_contacts()">Manuell synkning kontakter</button>';
                 echo '<button type="button" class="button" title="Manuell Synkning Orders" style="margin:5px" onclick="sync_orders()">Manuell synkning ordrar</button>';
                 echo '<button type="button" class="button" title="Manuell Synkning Products" style="margin:5px" onclick="initial_sync_products()">Manuell synkning produkter</button>';
+
                 echo '<h2 class="nav-tab-wrapper">';
 
                 foreach ( $this->plugin_settings_tabs as $tab_key => $tab_caption ) {
@@ -257,19 +265,18 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
              * @return void
              */
             function register_woocommerce_fortnox_general_settings() {
+
                 $this->plugin_settings_tabs[$this->general_settings_key] = 'Allmänna inställningar';
 
                 register_setting( $this->general_settings_key, $this->general_settings_key );
                 add_settings_section( 'section_general', 'Allmänna inställningar', array( &$this, 'section_general_desc' ), $this->general_settings_key );
                 add_settings_field( 'woocommerce-fortnox-api-key', 'API Nyckel', array( &$this, 'field_option_text' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'api-key', 'desc' => 'Här anges API-nyckeln du har erhållit från oss via mail.') );
-                //add_settings_field( 'woocommerce-fortnox-api-license-key', 'API Licensnyckel', array( &$this, 'field_option_text' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'api-key', 'desc' => 'Här anges API-licensnyckeln du har erhållit från Fortnox.') );
-                add_settings_field( 'woocommerce-fortnox-authorization-code', 'Authorization Code', array( &$this, 'field_option_text' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'authorization_code', 'desc' => 'Här anges din Authorization Code från Fortnox') );
-                add_settings_field( 'woocommerce-fortnox-client-secret', 'Client Secret', array( &$this, 'field_option_text' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'client_secret', 'desc' => 'Här anges ditt Client Secret från Fortnox') );
-                add_settings_field( 'woocommerce-fortnox-access-token', 'Access Token', array( &$this, 'field_option_text' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'access_token', 'desc' => 'Access Token') );
+                add_settings_field( 'woocommerce-fortnox-authorization-code', 'Fortnox API-kod', array( &$this, 'field_option_text' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'authorization_code', 'desc' => 'Här anges din Authorization Code från Fortnox') );
                 add_settings_field( 'woocommerce-fortnox-activate-orders', 'Aktivera synkning ordrar', array( &$this, 'field_option_checkbox'), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'activate-orders', 'desc' => ''));
                 add_settings_field( 'woocommerce-fortnox-activate-prices', 'Aktivera synkning priser', array( &$this, 'field_option_checkbox' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'activate-prices', 'desc' => '') );
                 add_settings_field( 'woocommerce-fortnox-activate-invoices', 'Skapa faktura för varje order', array( &$this, 'field_option_checkbox' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'activate-invoices', 'desc' => '') );
                 add_settings_field( 'woocommerce-fortnox-activate-bookkeeping', 'Aktivera automatisk bokföring för faktura', array( &$this, 'field_option_checkbox' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'activate-bookkeeping', 'desc' => '') );
+                add_settings_field( 'woocommerce-fortnox-activate-fortnox-products-sync', 'Aktivera lagersaldosynkning från fortnox', array( &$this, 'field_option_checkbox' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'activate-fortnox-products-sync', 'desc' => '') );
             }
 
             /**
@@ -294,8 +301,24 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 
             }
 
+
             /**
              * WooCommerce Fortnox Accounting Settings
+             *
+             * @access public
+             * @param void
+             * @return void
+             */
+//            function register_woocommerce_fortnox_manual_action() {
+//
+//                $this->plugin_settings_tabs[$this->manual_action_key] = 'Manuella aktions';
+//
+//                register_setting( $this->manual_action_key, $this->manual_action_key );
+//            }
+
+
+            /**
+             * WooCommerce Fortnox Order Settings
              *
              * @access public
              * @param void
@@ -365,11 +388,26 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                     <div class="wrap">
                         <?php $this->plugin_options_tabs(); ?>
                         </br>
-                        <a href="wp-plugs.com/faq"><span>FAQ</span></a></br>
-                        <a href="wp-plugs.com/support">Support</a>
+                        <a href="http://wp-plugs.com/faq"><span>FAQ</span></a></br>
+                        <a href="http://wp-plugs.com/support">Support</a>
                     </div>
                 <?php
                 }
+                else if($tab == $this->general_settings_key){ ?>
+                    <div class="wrap">
+                        <?php $this->plugin_options_tabs(); ?>
+<!--                        <a href="http://wp-plugs.com/support"><img src="--><?php //echo plugins_url( '/woocommerce_fortnox_integration_extended/assets/banner.png')?><!--" /></a>-->
+<!--                        <iframe width="420" height="315"-->
+<!--                                src="http://www.youtube.com/embed/XGSy3_Czz8k">-->
+<!--                        </iframe>-->
+                        <form method="post" action="options.php">
+                            <?php wp_nonce_field( 'update-options' ); ?>
+                            <?php settings_fields( $tab ); ?>
+                            <?php do_settings_sections( $tab ); ?>
+                            <?php submit_button(); ?>
+                        </form>
+                    </div>
+                <?php }
                 else{ ?>
                     <div class="wrap">
                         <?php $this->plugin_options_tabs(); ?>
@@ -477,7 +515,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                     include_once("class-fortnox3-api.php");
                     //fetch Order
                     $order = new WC_Order($orderId);
-
+                    error_log('send_contact_to_fortnox');
                     $customerNumber = $this->get_or_create_customer($order);
                     if(!isset($options['activate-orders'])){
                         return;
@@ -512,7 +550,8 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 
                     //fetch Order
                     $order = new WC_Order($orderId);
-
+                    error_log("ORDER");
+                    error_log(print_r($order, true));
                     //Init API
                     $apiInterface = new WCFAPI();
 
@@ -523,13 +562,19 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                     //send Order XML
                     $orderResponse = $apiInterface->create_order_request($orderXml);
 
-
+                    //Error handling
                     if(array_key_exists('Error', $orderResponse)){
-                        //Init DB
-                        $database = new WCFDatabaseInterface();
-                        //Save
-                        $database->create_unsynced_order($orderId);
-                        return 0;
+                        // if order exists
+                        if($orderResponse['Code'] == 2000861){
+                            $apiInterface->update_order_request($orderXml, $orderId);
+                        }
+                        else{
+                            //Init DB 2000861
+                            $database = new WCFDatabaseInterface();
+                            //Save
+                            $database->create_unsynced_order($orderId);
+                            return 0;
+                        }
                     }
                     if(!isset($options['activate-invoices'])){
                         return;
@@ -604,9 +649,9 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                 );
                 $the_query = new WP_Query( $args );
 
-//                foreach($the_query->get_posts() as $product){
-//                    $this->send_product_to_fortnox($product->ID);
-//                }
+                foreach($the_query->get_posts() as $product){
+                    $this->send_product_to_fortnox($product->ID);
+                }
                 wp_reset_postdata();
                 return true;
             }
@@ -646,10 +691,24 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 
                         if (!empty($isSynced)) {
                             $productXml = $productDoc->update($product);
-                            $apiInterface->update_product_request($productXml, $sku);
+                            $updateResponse = $apiInterface->update_product_request($productXml, $sku);
                             $productPriceXml = $productDoc->update_price($product);
                             $apiInterface->update_product_price_request($productPriceXml, $sku);
 
+                            if(array_key_exists('Code', $updateResponse)){
+                                if($updateResponse['Code'] == 2000513){
+                                    $productXml = $productDoc->create($product);
+                                    $productResponseCode = $apiInterface->create_product_request($productXml);
+                                    $fortnoxId = $productResponseCode['ArticleNumber'];
+
+                                    //set sku;
+                                    update_post_meta($productId, '_sku', $fortnoxId);
+                                    update_post_meta($productId, '_is_synced_to_fortnox', 1);
+
+                                    $productPriceXml = $productDoc->create_price($product);
+                                    $apiInterface->create_product_price_request($productPriceXml);
+                                }
+                            }
                         }
                         else{
                             $productXml = $productDoc->create($product);
@@ -668,10 +727,52 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                                 }
                             }
                         }
+                    }
+                }
+            }
 
-                        //set price
+            /**
+             * Fetches inventory from fortnox and updates WooCommerce inventory
+             *
+             * @return void
+             */
+            public function run_inventory_cron_job(){
+                include_once("class-fortnox3-api.php");
+                error_log("RUNNING CRON");
+                $options = get_option('woocommerce_fortnox_general_settings');
+                if(!isset($options['activate-fortnox-products-sync'])){
+                    return;
+                }
+                //Init API
+                $apiInterface = new WCFAPI();
 
+                //fetch all articles
+                $articles = $apiInterface->get_inventory()['ArticleSubset'];
 
+                $pf = new WC_Product_Factory();
+                $product = null;
+                foreach($articles as $article){
+                    //Query DB for id by SKU
+                    $query = new WP_Query( "post_type=product&meta_key=_sku&meta_value=" . $article['ArticleNumber'] );
+                    if($query->post_count == 1){
+                        $product = $pf->get_product($query->posts[0]->ID);
+                    }
+                    else{
+                        continue;
+                    }
+
+                    if(!$product)
+                        continue;
+
+                    if($article['QuantityInStock'] > 0){
+                        error_log('IN STOCK');
+                        $product->set_stock($article['QuantityInStock']);
+                        $product->set_stock_status('instock');
+                    }
+                    else{
+                        error_log('OUT OF STOCK');
+                        $product->set_stock(0);
+                        $product->set_stock_status('outofstock');
                     }
                 }
             }
@@ -703,28 +804,29 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                 $databaseInterface = new WCFDatabaseInterface();
                 $customer = $databaseInterface->get_customer_by_email($order->billing_email);
 
+                //Init API
+                $apiInterface = new WCFAPI();
+                //create Contact XML
+                $contactDoc = new WCFContactXMLDocument();
+                $contactXml = $contactDoc->create($order);
+
                 if(empty($customer)){
 
                     $customerId = $databaseInterface->create_customer($order->billing_email);
 
-                    //Init API
-                    $apiInterface = new WCFAPI();
-                    //create Order XML
-                    $contactDoc = new WCFContactXMLDocument();
-                    $contactXml = $contactDoc->create($order);
-
                     //send Contact XML
-                    $contactResponseCode = $apiInterface->create_contact_request($contactXml);
+                    $contactResponseCode = $apiInterface->create_customer_request($contactXml);
                     $customerNumber = $contactResponseCode['CustomerNumber'];
                     $databaseInterface->update_customer($customerId, $customerNumber);
 
                 }
                 else{
                     $customerNumber = $customer[0]->customer_number;
+                    $apiInterface->update_customer_request($contactXml, $customerNumber);
                 }
                 return $customerNumber;
             }
         }
-        $GLOBALS['wc_consuasor'] = new WC_Fortnox();
+        $GLOBALS['wc_consuasor'] = new WCFortnoxExtended();
     }
 }
