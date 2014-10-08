@@ -22,7 +22,7 @@ $array_data = json_decode(json_encode(simplexml_load_string($data)), true);
 $access_token = $array_data['AccessToken'];
 curl_close($ch);
 c13f0c47-546e-4af7-a21b-2da05d9800fd*/
-include_once("woocommerce-fortnox3.php");
+include_once("woocommerce-fortnox3-extended.php");
 $options = get_option('fortnox_access_token');
 if($options){
     print $options;

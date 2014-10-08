@@ -22,7 +22,7 @@ class WCFOrderXMLDocument extends WCFXMLDocument{
         $order_options = $options = get_option('woocommerce_fortnox_order_settings');
 
         $root = 'Order';
-        //$order['id'] = $arr->id;
+        $order['DocumentNumber'] = $arr->id;
         $order['AdministrationFee'] = $order_options['admin-fee'];
         $order['OrderDate'] =  substr($arr->order_date, 0, 10);
         $order['DeliveryDate'] = substr($arr->order_date, 0, 10);
@@ -56,8 +56,15 @@ class WCFOrderXMLDocument extends WCFXMLDocument{
 
             //fetch product
             $pf = new WC_Product_Factory();
-            $product = $pf->get_product($item['product_id']);
 
+            //if variable product there might be a different SKU
+            if(empty($item['variation_id'])){
+                $productId = $item['product_id'];
+            }
+            else{
+                $productId = $item['variation_id'];
+            }
+            $product = $pf->get_product($productId);
             $invoicerow = array();
             $invoicerow['ArticleNumber'] = $product->get_sku();
             $invoicerow['Description'] = $item['name'];
@@ -76,7 +83,6 @@ class WCFOrderXMLDocument extends WCFXMLDocument{
             $invoicerows[$key] = $invoicerow;
         }
         $order['OrderRows'] = $invoicerows;
-        logthis(print_r($order, true));
         return $this->generate($root, $order);
     }
 }

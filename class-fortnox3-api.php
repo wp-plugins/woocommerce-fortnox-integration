@@ -5,7 +5,7 @@ class WCFAPI{
     public $api_url;
 
     /** @public Client Secret token */
-    public $client_secret;
+    public $client_secret = 'AQV9TbDU1k';
 
     /** @public String Authorization code */
     public $authorization_code;
@@ -23,7 +23,6 @@ class WCFAPI{
 
         $options = get_option('woocommerce_fortnox_general_settings');
         $this->api_url = "https://api.fortnox.se/3/";
-        $this->client_secret = $options['client_secret'];
         $this->authorization_code = $options['authorization_code'];
         $this->api_key = $options['api-key'];
         $this->access_token = get_option('fortnox_access_token');
@@ -50,7 +49,7 @@ class WCFAPI{
      * @return bool
      */
     public function create_api_validation_request(){
-
+        error_log("API VALIDATION");
         if(!isset($this->api_key)){
             return false;
         }
@@ -67,7 +66,7 @@ class WCFAPI{
 
         $data = curl_exec($ch);
         curl_close($ch);
-
+        error_log($data);
         if($data == 'OK'){
             return true;
         }
@@ -94,6 +93,7 @@ class WCFAPI{
      * @return bool
      */
     public function create_invoice_bookkept_request($id){
+        error_log("SET INVOICE AS BOOKKEPT REQUEST");
         return $this->make_put_request($this->build_url("invoices/". $id . "/bookkeep"));
     }
 
@@ -105,7 +105,21 @@ class WCFAPI{
      * @return bool
      */
     public function create_order_request($xml){
+        error_log("CREATE ORDER REQUEST");
         return $this->make_post_request($this->build_url("orders"), $xml);
+    }
+
+    /**
+     * Creates a HttpRequest updating an order and appends the given XML to the request and sends it to Fortnox
+     *
+     * @access public
+     * @param mixed $xml
+     * @param int $orderId
+     * @return bool
+     */
+    public function update_order_request($xml, $orderId){
+        error_log("UPDATE ORDER REQUEST");
+        return $this->make_put_request($this->build_url("orders/". $orderId . "/"), $xml);
     }
 
     /**
@@ -116,6 +130,7 @@ class WCFAPI{
      * @return bool
      */
     public function create_order_invoice_request($documentNumber){
+        error_log("CREATE INVOICE REQUEST");
         return $this->make_put_request($this->build_url("orders/" . $documentNumber . "/createinvoice"));
     }
 
@@ -126,7 +141,8 @@ class WCFAPI{
      * @param mixed $xml
      * @return bool
      */
-    public function create_contact_request($xml){
+    public function create_customer_request($xml){
+        error_log("CREATE CONTACT PRICE REQUEST");
         return $this->make_post_request($this->build_url("customers"), $xml);
     }
 
@@ -138,6 +154,7 @@ class WCFAPI{
      * @return bool
      */
     public function create_product_request($xml){
+        error_log("CREATE PRODUCT REQUEST");
         return $this->make_post_request($this->build_url("articles"), $xml);
     }
 
@@ -147,11 +164,22 @@ class WCFAPI{
      *
      * @access public
      * @param mixed $xml
-     * @param mixed $sku
      * @return bool
      */
-    public function create_product_price_request($xml, $sku){
-        return $this->make_post_request($this->build_url("prices/A/" . $sku . "/0"), $xml);
+    public function create_product_price_request($xml){
+        error_log("CREATE PRODUCT PRICE REQUEST");
+        return $this->make_post_request($this->build_url("prices/"), $xml);
+    }
+
+    /**
+     * Creates a HttpRequest for fetching all customer and appends the given XML to the request and sends it to Fortnox
+     *
+     * @access public
+     * @return bool
+     */
+    public function get_customers(){
+        error_log("GET CUSTOMER REQUEST");
+        return $this->make_get_request($this->build_url("customers"));
     }
 
     /**
@@ -160,8 +188,9 @@ class WCFAPI{
      * @access public
      * @return bool
      */
-    public function get_customers(){
-        return $this->make_get_request($this->build_url("customers"));
+    public function get_inventory(){
+        error_log("GET INVENTORY REQUEST");
+        return $this->make_get_request($this->build_url("articles"));
     }
 
     /**
@@ -176,6 +205,9 @@ class WCFAPI{
             return false;
         }
 
+        error_log("LOGIN");
+        error_log($this->authorization_code);
+        error_log($this->client_secret);
         $headers = array(
             'Accept: application/xml',
             'Authorization-Code: '.$this->authorization_code,
@@ -193,12 +225,12 @@ class WCFAPI{
         curl_setopt ($ch, CURLOPT_SSL_VERIFYPEER, 0);
 
         $data = curl_exec($ch);
-        $array_data = json_decode(json_encode(simplexml_load_string($data)), true);
-        $this->access_token = $array_data['AccessToken'];
+        $arrayData = json_decode(json_encode(simplexml_load_string($data)), true);
+        $this->access_token = $arrayData['AccessToken'];
         if($this->access_token){
             update_option( 'fortnox_access_token', $this->access_token, '', 'yes' );
         }
-
+        error_log(print_r($arrayData, true));
         curl_close($ch);
         return false;
     }
@@ -231,9 +263,16 @@ class WCFAPI{
         curl_close($ch);
 
         //convert the XML result into array
-        $array_data = json_decode(json_encode(simplexml_load_string($data)), true);
-        logthis(print_r($array_data, true));
-        return $array_data;
+        $arrayData = json_decode(json_encode(simplexml_load_string($data)), true);
+        error_log(print_r($arrayData, true));
+
+        //Send error to plugapi
+        if (array_key_exists("Error",$arrayData)){
+            error_log("FORTNOX ERROR");
+            $this->post_error($arrayData['Message']);
+        }
+
+        return $arrayData;
     }
 
     /**
@@ -267,9 +306,16 @@ class WCFAPI{
         curl_close($ch);
 
         //convert the XML result into array
-        $array_data = json_decode(json_encode(simplexml_load_string($data)), true);
-        logthis(print_r($array_data, true));
-        return $array_data;
+        $arrayData = json_decode(json_encode(simplexml_load_string($data)), true);
+        error_log(print_r($arrayData, true));
+
+        //Send error to plugapi
+        if (array_key_exists("Error",$arrayData)){
+            error_log("FORTNOX ERROR");
+            $this->post_error($arrayData['Message']);
+        }
+
+        return $arrayData;
     }
 
     /**
@@ -308,8 +354,28 @@ class WCFAPI{
         //convert the XML result into array
 
         $array_data = json_decode(json_encode(simplexml_load_string($data)), true);
-        logthis(print_r($array_data, true));
+        error_log(print_r($array_data, true));
+
+        //Send error to plugapi
+        if (array_key_exists("Error",$array_data)){
+            error_log("FORTNOX ERROR");
+            $this->post_error($array_data['Message']);
+        }
+
         return $array_data;
+    }
+
+    /**
+     * Creates a HttpRequest for an update of a customer and appends the given XML to the request and sends it to Fortnox
+     *
+     * @access public
+     * @param mixed $xml
+     * @param mixed $customerNumber
+     * @return bool
+     */
+    public function update_customer_request($xml, $customerNumber){
+        error_log("UPDATE CUSTOMER REQUEST");
+        return $this->make_put_request($this->build_url("customers/" . $customerNumber), $xml);
     }
 
     /**
@@ -321,6 +387,7 @@ class WCFAPI{
      * @return bool
      */
     public function update_product_request($xml, $sku){
+        error_log("UPDATE PRODUCT REQUEST");
         return $this->make_put_request($this->build_url("articles/" . $sku), $xml);
     }
 
@@ -334,6 +401,34 @@ class WCFAPI{
      * @return bool
      */
     public function update_product_price_request($xml, $sku){
+        error_log("UPDATE PRICE REQUEST");
         return $this->make_put_request($this->build_url("prices/A/" . $sku . "/0"), $xml);
+    }
+
+
+    private function post_error($message){
+        if(!isset($this->api_key)){
+            return false;
+        }
+
+        $fields = array(
+            'api_key' => $this->api_key,
+            'message' => $message,
+        );
+
+        $ch = curl_init();
+        $url = "http://plugapi.consuasor.se/api_post.php";
+        curl_setopt ($ch, CURLOPT_URL, $url);
+        curl_setopt ($ch, CURLOPT_TIMEOUT,60);
+        curl_setopt ($ch, CURLOPT_VERBOSE,0);
+        curl_setopt ($ch, CURLOPT_POST, 1);
+        curl_setopt ($ch, CURLOPT_POSTFIELDS, $fields);
+        curl_setopt ($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt ($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt ($ch, CURLOPT_SSL_VERIFYPEER, 0);
+
+        $data = curl_exec($ch);
+        curl_close($ch);
+        error_log($data);
     }
 }

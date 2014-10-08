@@ -68,10 +68,15 @@ class WCFDatabaseInterface{
      */
     public function create_existing_customer($customer){
         global $wpdb;
-        if(!is_array($customer['CustomerNumber']) && !is_array($customer['Email'])){
+        if(!is_array($customer)){
+            return;
+        }
+        if(array_key_exists('CustomerNumber', $customer) && array_key_exists('Email', $customer)){
+            if(!is_array($customer['CustomerNumber']) && !is_array($customer['Email'])){
 
-            $wpdb->query("INSERT INTO wcf_customers VALUES (NULL, '".mysql_real_escape_string($customer['CustomerNumber'])."', '".mysql_real_escape_string($customer['Email'])."')");
-            return $wpdb->insert_id;
+                $wpdb->query("INSERT INTO wcf_customers VALUES (NULL, '".mysql_real_escape_string($customer['CustomerNumber'])."', '".mysql_real_escape_string($customer['Email'])."')");
+                return $wpdb->insert_id;
+            }
         }
     }
 
