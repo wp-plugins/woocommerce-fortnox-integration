@@ -1,5 +1,5 @@
 <?php
-class WCFXMLDocument {
+class WCF_XML_Document {
 
     /** @public String XML */
     var $xml;

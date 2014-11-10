@@ -1,7 +1,7 @@
 <?php
 include_once("class-fortnox3-xml.php");
 
-class WCFContactXMLDocument extends WCFXMLDocument{
+class WCF_Contact_XML_Document extends WCF_XML_Document{
 
     /**
      *

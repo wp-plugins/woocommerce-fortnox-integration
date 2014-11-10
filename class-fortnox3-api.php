@@ -1,5 +1,5 @@
 <?php
-class WCFAPI{
+class WCF_API{
 
     /** @public String base URL */
     public $api_url;
@@ -49,7 +49,7 @@ class WCFAPI{
      * @return bool
      */
     public function create_api_validation_request(){
-        error_log("API VALIDATION");
+        logthis("API VALIDATION");
         if(!isset($this->api_key)){
             return false;
         }
@@ -66,7 +66,7 @@ class WCFAPI{
 
         $data = curl_exec($ch);
         curl_close($ch);
-        error_log($data);
+        logthis($data);
         if($data == 'OK'){
             return true;
         }
@@ -93,7 +93,7 @@ class WCFAPI{
      * @return bool
      */
     public function create_invoice_bookkept_request($id){
-        error_log("SET INVOICE AS BOOKKEPT REQUEST");
+        logthis("SET INVOICE AS BOOKKEPT REQUEST");
         return $this->make_put_request($this->build_url("invoices/". $id . "/bookkeep"));
     }
 
@@ -105,7 +105,7 @@ class WCFAPI{
      * @return bool
      */
     public function create_order_request($xml){
-        error_log("CREATE ORDER REQUEST");
+        logthis("CREATE ORDER REQUEST");
         return $this->make_post_request($this->build_url("orders"), $xml);
     }
 
@@ -118,7 +118,7 @@ class WCFAPI{
      * @return bool
      */
     public function update_order_request($xml, $orderId){
-        error_log("UPDATE ORDER REQUEST");
+        logthis("UPDATE ORDER REQUEST");
         return $this->make_put_request($this->build_url("orders/". $orderId . "/"), $xml);
     }
 
@@ -130,7 +130,7 @@ class WCFAPI{
      * @return bool
      */
     public function create_order_invoice_request($documentNumber){
-        error_log("CREATE INVOICE REQUEST");
+        logthis("CREATE INVOICE REQUEST");
         return $this->make_put_request($this->build_url("orders/" . $documentNumber . "/createinvoice"));
     }
 
@@ -142,7 +142,7 @@ class WCFAPI{
      * @return bool
      */
     public function create_customer_request($xml){
-        error_log("CREATE CONTACT PRICE REQUEST");
+        logthis("CREATE CONTACT PRICE REQUEST");
         return $this->make_post_request($this->build_url("customers"), $xml);
     }
 
@@ -154,7 +154,7 @@ class WCFAPI{
      * @return bool
      */
     public function create_product_request($xml){
-        error_log("CREATE PRODUCT REQUEST");
+        logthis("CREATE PRODUCT REQUEST");
         return $this->make_post_request($this->build_url("articles"), $xml);
     }
 
@@ -167,7 +167,7 @@ class WCFAPI{
      * @return bool
      */
     public function create_product_price_request($xml){
-        error_log("CREATE PRODUCT PRICE REQUEST");
+        logthis("CREATE PRODUCT PRICE REQUEST");
         return $this->make_post_request($this->build_url("prices/"), $xml);
     }
 
@@ -178,7 +178,7 @@ class WCFAPI{
      * @return bool
      */
     public function get_customers(){
-        error_log("GET CUSTOMER REQUEST");
+        logthis("GET CUSTOMER REQUEST");
         return $this->make_get_request($this->build_url("customers"));
     }
 
@@ -189,7 +189,7 @@ class WCFAPI{
      * @return bool
      */
     public function get_inventory(){
-        error_log("GET INVENTORY REQUEST");
+        logthis("GET INVENTORY REQUEST");
         return $this->make_get_request($this->build_url("articles"));
     }
 
@@ -205,9 +205,9 @@ class WCFAPI{
             return false;
         }
 
-        error_log("LOGIN");
-        error_log($this->authorization_code);
-        error_log($this->client_secret);
+        logthis("LOGIN");
+        logthis($this->authorization_code);
+        logthis($this->client_secret);
         $headers = array(
             'Accept: application/xml',
             'Authorization-Code: '.$this->authorization_code,
@@ -230,7 +230,7 @@ class WCFAPI{
         if($this->access_token){
             update_option( 'fortnox_access_token', $this->access_token, '', 'yes' );
         }
-        error_log(print_r($arrayData, true));
+        logthis(print_r($arrayData, true));
         curl_close($ch);
         return false;
     }
@@ -264,11 +264,11 @@ class WCFAPI{
 
         //convert the XML result into array
         $arrayData = json_decode(json_encode(simplexml_load_string($data)), true);
-        error_log(print_r($arrayData, true));
+        logthis(print_r($arrayData, true));
 
         //Send error to plugapi
         if (array_key_exists("Error",$arrayData)){
-            error_log("FORTNOX ERROR");
+            logthis("FORTNOX ERROR");
             $this->post_error($arrayData['Message']);
         }
 
@@ -307,11 +307,11 @@ class WCFAPI{
 
         //convert the XML result into array
         $arrayData = json_decode(json_encode(simplexml_load_string($data)), true);
-        error_log(print_r($arrayData, true));
+        logthis(print_r($arrayData, true));
 
         //Send error to plugapi
         if (array_key_exists("Error",$arrayData)){
-            error_log("FORTNOX ERROR");
+            logthis("FORTNOX ERROR");
             $this->post_error($arrayData['Message']);
         }
 
@@ -354,11 +354,11 @@ class WCFAPI{
         //convert the XML result into array
 
         $array_data = json_decode(json_encode(simplexml_load_string($data)), true);
-        error_log(print_r($array_data, true));
+        logthis(print_r($array_data, true));
 
         //Send error to plugapi
         if (array_key_exists("Error",$array_data)){
-            error_log("FORTNOX ERROR");
+            logthis("FORTNOX ERROR");
             $this->post_error($array_data['Message']);
         }
 
@@ -374,7 +374,7 @@ class WCFAPI{
      * @return bool
      */
     public function update_customer_request($xml, $customerNumber){
-        error_log("UPDATE CUSTOMER REQUEST");
+        logthis("UPDATE CUSTOMER REQUEST");
         return $this->make_put_request($this->build_url("customers/" . $customerNumber), $xml);
     }
 
@@ -387,7 +387,7 @@ class WCFAPI{
      * @return bool
      */
     public function update_product_request($xml, $sku){
-        error_log("UPDATE PRODUCT REQUEST");
+        logthis("UPDATE PRODUCT REQUEST");
         return $this->make_put_request($this->build_url("articles/" . $sku), $xml);
     }
 
@@ -401,7 +401,7 @@ class WCFAPI{
      * @return bool
      */
     public function update_product_price_request($xml, $sku){
-        error_log("UPDATE PRICE REQUEST");
+        logthis("UPDATE PRICE REQUEST");
         return $this->make_put_request($this->build_url("prices/A/" . $sku . "/0"), $xml);
     }
 
@@ -429,6 +429,6 @@ class WCFAPI{
 
         $data = curl_exec($ch);
         curl_close($ch);
-        error_log($data);
+        logthis($data);
     }
 }

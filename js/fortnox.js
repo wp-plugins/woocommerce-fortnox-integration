@@ -29,3 +29,10 @@ function initial_sync_products() {
         alert(response);
     });
 }
+
+function send_support_mail() {
+    var data = jQuery('form#support').serialize();
+    jQuery.post(ajaxurl, data, function(response) {
+        alert(response);
+    });
+}

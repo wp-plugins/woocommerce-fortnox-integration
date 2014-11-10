@@ -1,6 +1,6 @@
 <?php
 include_once("class-fortnox3-xml.php");
-class WCFProductXMLDocument extends WCFXMLDocument{
+class WCF_Product_XML_Document extends WCF_XML_Document{
 
     /**
      *
@@ -56,6 +56,7 @@ class WCFProductXMLDocument extends WCFXMLDocument{
     public function create_price($product){
 
         $root = 'Price';
+        $options = get_option('woocommerce_fortnox_general_settings');
         $price = array();
 
         if(!isset($meta['pricelist_id'])){
@@ -64,31 +65,14 @@ class WCFProductXMLDocument extends WCFXMLDocument{
         else{
             $price['PriceList'] = $meta['pricelist_id'];
         }
-
-        $options = get_option('woocommerce_fortnox_accounting_settings');
-        if($product->get_tax_class()!=''){
-            switch($product->get_tax_class()){
-                case $options['taxclass-account-25-vat']:
-                    $price['Price'] = (double)$product->get_price() * 1/1.25;
-                    break;
-                case $options['taxclass-account-12-vat']:
-                    $price['Price'] = (double)$product->get_price() * 1/1.12;
-                    break;
-                case $options['taxclass-account-6-vat']:
-                    $price['Price'] = (double)$product->get_price() * 1/1.06;
-                    break;
-                case 'Standard':
-                    $price['Price'] = (double)$product->get_price() * 1/1.25;
-                    break;
-                default:
-                    $price['Price'] = (double)$product->get_price() * 1/1.25;
-            }
+        if($options['activate-vat'] == 'on'){
+            $price['Price'] = $product->get_price_including_tax();
+            logthis('YES');
         }
         else{
-            $price['Price'] = (double)$product->get_price() * 1/1.25;
+            $price['Price'] = $product->get_price_excluding_tax();
+            logthis('NO');
         }
-
-
         $price['ArticleNumber'] = $product->get_sku();
         $price['FromQuantity'] = 1;
 
@@ -107,27 +91,14 @@ class WCFProductXMLDocument extends WCFXMLDocument{
         $root = 'Price';
         $price = array();
 
-        $options = get_option('woocommerce_fortnox_accounting_settings');
-        if($product->get_tax_class()!=''){
-            switch($product->get_tax_class()){
-                case $options['taxclass-account-25-vat']:
-                    $price['Price'] = (double)$product->get_price() * 1/1.25;
-                    break;
-                case $options['taxclass-account-12-vat']:
-                    $price['Price'] = (double)$product->get_price() * 1/1.12;
-                    break;
-                case $options['taxclass-account-6-vat']:
-                    $price['Price'] = (double)$product->get_price() * 1/1.06;
-                    break;
-                case 'Standard':
-                    $price['Price'] = (double)$product->get_price() * 1/1.25;
-                    break;
-                default:
-                    $price['Price'] = (double)$product->get_price() * 1/1.25;
-            }
+        $options = get_option('woocommerce_fortnox_general_settings');
+        if($options['activate-vat'] == 'on'){
+            $price['Price'] = $product->get_price_including_tax();
+            logthis('YES');
         }
         else{
-            $price['Price'] = (double)$product->get_price() * 1/1.25;
+            $price['Price'] = $product->get_price_excluding_tax();
+            logthis('NO');
         }
 
         return $this->generate($root, $price);

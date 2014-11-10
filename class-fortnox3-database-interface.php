@@ -1,5 +1,5 @@
 <?php
-class WCFDatabaseInterface{
+class WCF_Database_Interface{
 
     /**
      *
@@ -103,6 +103,12 @@ class WCFDatabaseInterface{
     public function update_customer($customerId, $customerNumber){
         global $wpdb;
         $wpdb->query("UPDATE wcf_customers SET customer_number = '". $customerNumber ."' WHERE id = ".$customerId);
+        return true;
+    }
+
+    public function reset_database(){
+        global $wpdb;
+        $wpdb->query("DELETE FROM wcf_customers;");
         return true;
     }
 }

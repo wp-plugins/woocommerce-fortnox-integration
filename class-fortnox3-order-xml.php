@@ -1,6 +1,7 @@
 <?php
 include_once("class-fortnox3-xml.php");
-class WCFOrderXMLDocument extends WCFXMLDocument{
+
+class WCF_Order_XML_Document extends WCF_XML_Document{
 
     /**
      *
@@ -20,6 +21,7 @@ class WCFOrderXMLDocument extends WCFXMLDocument{
     public function create($arr, $customerNumber){
 
         $order_options = $options = get_option('woocommerce_fortnox_order_settings');
+        $options = get_option('woocommerce_fortnox_general_settings');
 
         $root = 'Order';
         $order['DocumentNumber'] = $arr->id;
@@ -64,6 +66,7 @@ class WCFOrderXMLDocument extends WCFXMLDocument{
             else{
                 $productId = $item['variation_id'];
             }
+
             $product = $pf->get_product($productId);
             $invoicerow = array();
             $invoicerow['ArticleNumber'] = $product->get_sku();
@@ -71,7 +74,14 @@ class WCFOrderXMLDocument extends WCFXMLDocument{
             $invoicerow['Unit'] = 'st';
             $invoicerow['DeliveredQuantity'] = $item['qty'];
             $invoicerow['OrderedQuantity'] = $item['qty'];
-            $invoicerow['Price'] = $product->get_regular_price();
+
+            if($options['activate-vat'] == 'on'){
+                $invoicerow['Price'] = $product->get_price_including_tax();
+            }
+            else{
+                $invoicerow['Price'] = $product->get_price_excluding_tax();
+            }
+
             $invoicerow['VAT'] = $item['tax_class'];
             //discount
             if($product->is_on_sale()){
