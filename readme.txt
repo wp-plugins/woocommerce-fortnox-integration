@@ -50,7 +50,7 @@ Requires the WooCommerce plugin. Now works with Fortnox 3
 
 == Installation ==
 
-<iframe src="//player.vimeo.com/video/107836260" width="500" height="281" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+[vimeo http://vimeo.com/107836260]
 
 1. Install WooCommerce Fortnox Integration either via the WordPress.org plugin directory, or by uploading the files to your server
 2. Activate the plugin in your Wordpress Admin and go to the admin panel Setting -> WooCommerce Fortnox Integration.
@@ -60,15 +60,11 @@ Requires the WooCommerce plugin. Now works with Fortnox 3
 
 == Screenshots ==
 
-*General settings*
-/assets/screenshot-1.jpg
+1. General settings
 
-*Order setting*
-/assets/screenshot-2.jpg
+2. Order settings
 
-*Support*
-Read the FAQ or business hours mail support except weekends and holidays.
-/assets/screenshot-3.jpg
+3. Support
 
 == Frequently Asked Questions ==
 
