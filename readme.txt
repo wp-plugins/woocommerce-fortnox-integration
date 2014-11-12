@@ -61,14 +61,14 @@ Requires the WooCommerce plugin. Now works with Fortnox 3
 == Screenshots ==
 
 *General settings*
-/assets/Screenshot-1.jpg
+/assets/screenshot-1.jpg
 
 *Order setting*
-/assets/Screenshot-2.jpg
+/assets/screenshot-2.jpg
 
 *Support*
 Read the FAQ or business hours mail support except weekends and holidays.
-/assets/Screenshot-3.jpg
+/assets/screenshot-3.jpg
 
 == Frequently Asked Questions ==
 
