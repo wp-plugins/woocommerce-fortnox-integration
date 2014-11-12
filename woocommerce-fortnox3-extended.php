@@ -501,9 +501,9 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                     <div class="wrap">
                         <?php $this->plugin_options_tabs(); ?>
                         <ul>
-                            <li class="logo"><?php echo '<img src="' . plugins_url( 'img/logo_landscape.png', __FILE__ ) . '" > '; ?></li>
-                            <li class="col-two"><a href="http://wp-plugs.com/woocommerce-fortnox/#faq"><?php echo '<img src="' . plugins_url( 'img/awp_faq.png', __FILE__ ) . '" > '; ?></a></li>
-                            <li class="col-two"><a href="http://wp-plugs.com/support"><?php echo '<img src="' . plugins_url( 'img/awp_support.png', __FILE__ ) . '" > '; ?></a></li>
+                            <li class="logo"><?php echo '<img src="' . plugins_url( 'assets/logo_landscape.png', __FILE__ ) . '" > '; ?></li>
+                            <li class="col-two"><a href="http://wp-plugs.com/woocommerce-fortnox/#faq"><?php echo '<img src="' . plugins_url( 'assets/awp_faq.png', __FILE__ ) . '" > '; ?></a></li>
+                            <li class="col-two"><a href="http://wp-plugs.com/support"><?php echo '<img src="' . plugins_url( 'assets/awp_support.png', __FILE__ ) . '" > '; ?></a></li>
                     </div>
                 <?php
                 }
@@ -544,7 +544,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                         <?php $this->plugin_options_tabs(); ?>
                         <ul>
                         	<li class="full">
-                        		<?php echo '<img src="' . plugins_url( 'img/banner-772x250.png', __FILE__ ) . '" > '; ?>
+                        		<?php echo '<img src="' . plugins_url( 'assets/banner-772x250.png', __FILE__ ) . '" > '; ?>
                         	</li>
                             <li class="col-twothird">
                                 <iframe src="//player.vimeo.com/video/107836260" width="500" height="281" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
