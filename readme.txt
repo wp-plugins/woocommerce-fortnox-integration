@@ -16,7 +16,7 @@ Version:           1.3.1
 Completely integrates your WooCommerce customers and orders to your Fortnox CRM and Fortnox accounting software.
 Requires the WooCommerce plugin. Now works with Fortnox 3
 
-<iframe src="//player.vimeo.com/video/107836260" width="500" height="281" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+[vimeo http://vimeo.com/107836260]
 
 = Data export to Fortnox =
 
