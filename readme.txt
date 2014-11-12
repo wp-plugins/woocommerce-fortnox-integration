@@ -61,14 +61,14 @@ Requires the WooCommerce plugin. Now works with Fortnox 3
 == Screenshots ==
 
 *General settings*
-/assets/Screenshot-01.jpg
+/assets/Screenshot-1.jpg
 
 *Order setting*
-/assets/Screenshot-0102.jpg
+/assets/Screenshot-2.jpg
 
 *Support*
 Read the FAQ or business hours mail support except weekends and holidays.
-/assets/Screenshot-0103.jpg
+/assets/Screenshot-3.jpg
 
 == Frequently Asked Questions ==
 
@@ -79,6 +79,8 @@ http://wp-plugs.com/woocommerce-fortnox/
 == Changelog ==
 
 = 1.3.1 =
-* Bug fixes with export data
+* General bugfixes
+* Added support for retrieving stock information from Fortnox
+* When order sync fails due to product missing the product is synced and then the order syncs again
 * Direct support in plugin admin view
 * Video guide in plugin admin view
