@@ -74,7 +74,7 @@ http://wp-plugs.com/woocommerce-fortnox/
 
 == Changelog ==
 
-= 1.3.5 =
+= 1.35 =
 * General bugfixes
 * Added support for manual retrieving stock information from Fortnox
 * Added support for product variations
