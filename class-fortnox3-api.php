@@ -172,6 +172,17 @@ class WCF_API{
     }
 
     /**
+     * Creates a HttpRequest for an article for given SKU
+     *
+     * @access public
+     * @return mixed
+     */
+    public function get_article($sku){
+        logthis("GET ARTICLE REQUEST");
+        return $this->make_get_request($this->build_url("articles/" . $sku));
+    }
+
+    /**
      * Creates a HttpRequest for fetching all customer and appends the given XML to the request and sends it to Fortnox
      *
      * @access public

@@ -64,7 +64,7 @@ Requires the WooCommerce plugin. Now works with Fortnox 3
 
 2. Order settings
 
-3. Support
+3. Support - Read the FAQ or business hours mail support except weekends and holidays.
 
 == Frequently Asked Questions ==
 
@@ -74,9 +74,8 @@ http://wp-plugs.com/woocommerce-fortnox/
 
 == Changelog ==
 
-= 1.3.1 =
+= 1.3.5 =
 * General bugfixes
-* Added support for retrieving stock information from Fortnox
-* When order sync fails due to product missing the product is synced and then the order syncs again
-* Direct support in plugin admin view
-* Video guide in plugin admin view
+* Added support for manual retrieving stock information from Fortnox
+* Added support for product variations
+* Added payment method to order sync which will be displayed in order Remark
