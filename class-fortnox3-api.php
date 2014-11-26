@@ -190,7 +190,7 @@ class WCF_API{
      */
     public function get_customers(){
         logthis("GET CUSTOMER REQUEST");
-        return $this->make_get_request($this->build_url("customers"));
+        return $this->make_get_request($this->build_url("customers/?limit=500"));
     }
 
     /**
@@ -201,7 +201,7 @@ class WCF_API{
      */
     public function get_inventory(){
         logthis("GET INVENTORY REQUEST");
-        return $this->make_get_request($this->build_url("articles"));
+        return $this->make_get_request($this->build_url("articles/?limit=500"));
     }
 
     /**
