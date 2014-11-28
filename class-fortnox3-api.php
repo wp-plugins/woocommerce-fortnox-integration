@@ -16,6 +16,8 @@ class WCF_API{
     /** @public String api key */
     public $api_key;
 
+    /** @public String api key */
+    public $has_error;
     /**
      *
      */
@@ -241,6 +243,9 @@ class WCF_API{
         if($this->access_token){
             update_option( 'fortnox_access_token', $this->access_token, '', 'yes' );
         }
+        else{
+            $this->has_error = true;
+        }
         logthis(print_r($arrayData, true));
         curl_close($ch);
         return false;
@@ -278,7 +283,7 @@ class WCF_API{
         logthis(print_r($arrayData, true));
 
         //Send error to plugapi
-        if (array_key_exists("Error",$arrayData)){
+        if (array_key_exists("Error", $arrayData)){
             logthis("FORTNOX ERROR");
             $this->post_error($arrayData['Message']);
         }
@@ -321,7 +326,7 @@ class WCF_API{
         logthis(print_r($arrayData, true));
 
         //Send error to plugapi
-        if (array_key_exists("Error",$arrayData)){
+        if (array_key_exists("Error", $arrayData)){
             logthis("FORTNOX ERROR");
             $this->post_error($arrayData['Message']);
         }
@@ -368,7 +373,7 @@ class WCF_API{
         logthis(print_r($array_data, true));
 
         //Send error to plugapi
-        if (array_key_exists("Error",$array_data)){
+        if (array_key_exists("Error", $array_data)){
             logthis("FORTNOX ERROR");
             $this->post_error($array_data['Message']);
         }

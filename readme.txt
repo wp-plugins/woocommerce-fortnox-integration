@@ -1,81 +1,42 @@
 === WooCommerce Fortnox Integration ===
 
-Contributors:      Advanced Wp-Plugs
+Contributors:      Kircher Rode & Wiberg
 Plugin Name:       WooCommerce Fortnox Plugin
 Plugin URI:        wp-plugs.com
-Tags:              WooCommerce, Order, E-Commerce, Accounting, sync, Fortnox, Customers, Integration, 
+Tags:              WooCommerce, Order, E-Commerce, Accounting
 Author URI:        wp-plugs.com
-Author:            Advanced Wp-Plugs
+Author:            Kircher Rode & Wiberg
 Requires at least: 3.8
 Tested up to:      4.0
-Stable tag:        1.0
+Stable tag:        1.35
 Version:           1.35
 
 == Description ==
 
-Completely integrates your WooCommerce customers and orders to your Fortnox CRM and Fortnox accounting software.
-Requires the WooCommerce plugin. Now works with Fortnox 3
-
-[vimeo http://vimeo.com/107836260]
-
-= Data export to Fortnox =
-
-* AdministrationFee
-* OrderDate
-* DeliveryDate
-* Currency
-* Freight
-* CustomerNumber
-* Address1
-* City
-* Country
-* Phone1
-* DeliveryAddress1
-* DeliveryCity
-* DeliveryCountry 
-* DeliveryZipCode 
-* CustomerName
-* DeliveryName
-* VATIncluded
-* Email
-* ArticleNumber
-* Description
-* Unit
-* DeliveredQuantity
-* OrderedQuantity
-* Price
-* VAT
-* Discount
-* DiscountType
+Completely syncs your WooCommerce customers and orders to your Fortnox CRM and Fortnox accounting software.
+Requires the WooCommerce plugin.
+Now works with Fortnox 3
 
 == Installation ==
 
-[vimeo http://vimeo.com/107836260]
-
 1. Install WooCommerce Fortnox Integration either via the WordPress.org plugin directory, or by uploading the files to your server
-2. Activate the plugin in your Wordpress Admin and go to the admin panel Setting -> WooCommerce Fortnox Integration.
-3. Active the plugin with your API-key that you have received by mail and your Fortnox API key.
+2. Activate the plugin in your Wordpress Admin and go to the admin panel Setting -> WooCommerce Fortnox Settings.
+3. Active the plugin with your API-key, Fortnox database ID och the Fortnox token.
 4. Configure your plugin as needed.
 5. That's it. You're ready to focus on sales, marketing and other cool stuff :-)
 
 == Screenshots ==
 
-1. General settings
+*General settings*
+/assets/01.jpg
 
-2. Order settings
+*Order setting*
+/assets/02.jpg
 
-3. Support - Read the FAQ or business hours mail support except weekends and holidays.
+*Support*
+Read the FAQ or business hours mail support except weekends and holidays.
+/assets/03.jpg
 
 == Frequently Asked Questions ==
 
-All FAQ are posted on our site, if you don’t find your answer we provide you with free support.
-
-http://wp-plugs.com/woocommerce-fortnox/
-
-== Changelog ==
-
-= 1.35 =
-* General bugfixes
-* Added support for manual retrieving stock information from Fortnox
-* Added support for product variations
-* Added payment method to order sync which will be displayed in order Remark
+http://wp-plugs.com/faq

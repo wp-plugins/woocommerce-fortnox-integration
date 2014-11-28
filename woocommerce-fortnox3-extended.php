@@ -4,14 +4,14 @@
  * Plugin URI: http://plugins.svn.wordpress.org/woocommerce-fortnox-integration/
  * Description: A Fortnox 3 API Interface. Synchronizes products, orders and more to fortnox.
  * Also fetches inventory from fortnox and updates WooCommerce
- * Version: 1.35
+ * Version: 1.36
  * Author: Advanced WP-Plugs
  * Author URI: http://wp-plugs.com
  * License: GPL2
  */
 
 if(!defined('TESTING')){
-    define('TESTING', true);
+    define('TESTING', false);
 }
 
 if(!defined('AUTOMATED_TESTING')){
@@ -59,6 +59,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
     load_plugin_textdomain( 'wc_fortnox_extended', false, dirname( plugin_basename( __FILE__ ) ) . '/' );
     if ( ! class_exists( 'WCFortnoxExtended' ) ) {
 
+
         // in javascript, object properties are accessed as ajax_object.ajax_url, ajax_object.we_value
         function fortnox_enqueue(){
             wp_enqueue_script('jquery');
@@ -74,14 +75,9 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
             include_once("class-woo-fortnox-controller.php");
             $controller = new WC_Fortnox_Controller();
             ob_start();
-            if($controller->initial_products_sync()){
-                ob_end_clean();
-                echo "Produkter är synkroniserade utan problem.";
-            }
-            else{
-                ob_end_clean();
-                echo "Något gick fel";
-            }
+            $message = $controller->initial_products_sync();
+            ob_end_clean();
+            echo $message;
             die(); // this is required to return a proper result
         }
 
@@ -92,9 +88,9 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
             include_once("class-woo-fortnox-controller.php");
             ob_start();
             $controller = new WC_Fortnox_Controller();
-            $controller->fetch_fortnox_contacts();
+            $message = $controller->fetch_fortnox_contacts();
             ob_end_clean();
-            echo "Kontakter är synkroniserade utan problem.";
+            echo $message;
 
             die(); // this is required to return a proper result
         }
@@ -116,13 +112,8 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
             global $wpdb; // this is how you get access to the database
             include_once("class-woo-fortnox-controller.php");
             $controller = new WC_Fortnox_Controller();
-
-            if($controller->sync_orders_to_fortnox()){
-                echo "Ordrar är synkroniserade utan problem.";
-            }
-            else{
-                echo "Något gick fel";
-            }
+            $message = $controller->sync_orders_to_fortnox();
+            echo $message;
             die(); // this is required to return a proper result
         }
 
@@ -133,15 +124,9 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
             include_once("class-woo-fortnox-controller.php");
             ob_start();
             $controller = new WC_Fortnox_Controller();
-
-            if($controller->run_manual_inventory_cron_job()){
-
-                echo "Lagret uppdaterat.";
-            }
-            else{
-                echo "Något gick fel";
-            }
+            $message = $controller->run_manual_inventory_cron_job();
             ob_end_clean();
+            echo $message;
             die(); // this is required to return a proper result
         }
 
@@ -163,6 +148,16 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
             private $plugin_options_key = 'woocommerce_fortnox_options';
             private $plugin_settings_tabs = array();
 
+            public $WCF_API_KEY_ERROR = 1;
+            public $WCF_FORTNOX_KEY_ERROR = 2;
+            public $WCF_ORDER_ERROR = 3;
+            public $WCF_INVOICE_ERROR = 4;
+            public $WCF_BOOKKEEPING_ERROR = 5;
+            public $WCF_CONTACT_ERROR = 6;
+            public $WCF_PRODUCT_ERROR = 7;
+            public $WCF_ORDER_SUCCESS = 8;
+            public $WCF_PRODUCT_SUCCESS = 9;
+
             public function __construct() {
 
                 //call register settings function
@@ -173,6 +168,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                 add_action( 'admin_init', array( &$this, 'register_woocommerce_fortnox_manual_action' ));
                 add_action( 'admin_init', array( &$this, 'register_woocommerce_fortnox_support' ));
                 add_action( 'admin_menu', array( &$this, 'add_admin_menus' ) );
+                add_action( 'admin_notices', array( $this, 'admin_notices' ) );
 
                 // Register WooCommerce Hooks
                 if(!AUTOMATED_TESTING)
@@ -199,6 +195,51 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
              */
             function add_admin_menus() {
                 add_options_page( 'WooCommerce Fortnox Integration', 'WooCommerce Fortnox Integration', 'manage_options', $this->plugin_options_key, array( &$this, 'woocommerce_fortnox_options_page' ) );
+            }
+
+            public function admin_notices() {
+                if ( ! isset( $_GET['fortnox_message'] ) ){
+                    return;
+                }
+                $class = "error";
+                $message = "";
+                switch($_GET['fortnox_message']){
+                    case $this->WCF_API_KEY_ERROR:
+                        $message = "WooCommerce Fortnox Integration: Er API-Nyckel är ej giltig.";
+                        break;
+                    case $this->WCF_FORTNOX_KEY_ERROR:
+                        $message = "WooCommerce Fortnox Integration: Inloggning till Fortnox misslyckades.";
+                        break;
+                    case $this->WCF_ORDER_ERROR:
+                        $message = "WooCommerce Fortnox Integration: Synkronisering av order misslyckades.";
+                        break;
+                    case $this->WCF_INVOICE_ERROR:
+                        $message = "WooCommerce Fortnox Integration: Lyckades EJ att skapa faktura av ordern.";
+                        break;
+                    case $this->WCF_BOOKKEEPING_ERROR:
+                        $message = "WooCommerce Fortnox Integration: Lyckades EJ att bokföra orderns faktura.";
+                        break;
+                    case $this->WCF_CONTACT_ERROR:
+                        $message = "WooCommerce Fortnox Integration: Lyckades EJ att skapa kund.";
+                        break;
+                    case $this->WCF_ORDER_SUCCESS:
+                        $class = "update";
+                        $message = "WooCommerce Fortnox Integration: Ordern har synkroniserats till Fortnox.";
+                        break;
+                    case $this->WCF_PRODUCT_SUCCESS:
+                        $class = "update";
+                        $message = "WooCommerce Fortnox Integration: Produkten har synkroniserats till Fortnox.";
+                        break;
+                    case $this->WCF_PRODUCT_ERROR:
+                        $message = "WooCommerce Fortnox Integration: Lyckades EJ att synkronisera produkt.";
+                        break;
+                }
+
+                ?>
+                <div class="<?php echo $class;?>">
+                    <p><?php esc_html_e( $message, 'text-domain' ); ?></p>
+                </div>
+            <?php
             }
 
             /**
