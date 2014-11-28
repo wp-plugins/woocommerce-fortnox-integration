@@ -41,10 +41,27 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
         $order['DeliveryCity'] = $arr->shipping_city;
         $order['DeliveryCountry'] = $this->countries[$arr->shipping_country];
         $order['DeliveryZipCode'] =  $arr->shipping_postcode;
-        $order['CustomerName'] = $arr->billing_first_name . " " . $arr->billing_last_name;
-        $order['DeliveryName'] = $arr->billing_first_name . " " . $arr->billing_last_name;
-        $order['VATIncluded'] = 'true';
 
+        if(isset($arr->billing_company)){
+            $order['CustomerName'] = $arr->billing_first_name . " " . $arr->billing_last_name . " " . $arr->billing_company;
+        }
+        else{
+            $order['DeliveryName'] = $arr->billing_first_name . " " . $arr->billing_last_name;
+        }
+
+        $order['VATIncluded'] = 'true';
+        if($options['activate-vat'] == 'on'){
+            $order['VATIncluded'] = 'true';
+        }
+        else{
+            $order['VATIncluded'] = 'false';
+        }
+
+
+        if($order_options['add-payment-type'] == 'on'){
+            $payment_method = get_post_meta( $arr->id, '_payment_method_title');
+            $order['Remarks'] = $payment_method[0];
+        }
         $email = array();
         $email['EmailAddressTo'] = $arr->billing_email;
         $order['EmailInformation'] =  $email;
@@ -68,12 +85,15 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
             }
 
             $product = $pf->get_product($productId);
+            logthis(print_r($product, true));
             $invoicerow = array();
             $invoicerow['ArticleNumber'] = $product->get_sku();
             $invoicerow['Description'] = $item['name'];
             $invoicerow['Unit'] = 'st';
             $invoicerow['DeliveredQuantity'] = $item['qty'];
             $invoicerow['OrderedQuantity'] = $item['qty'];
+
+            $invoicerow['Price'] = $product->get_price_excluding_tax();
 
             if($options['activate-vat'] == 'on'){
                 $invoicerow['Price'] = $product->get_price_including_tax();
@@ -85,7 +105,7 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
             $invoicerow['VAT'] = $item['tax_class'];
             //discount
             if($product->is_on_sale()){
-                $invoicerow['Discount'] = $item['qty']*($product->get_regular_price() - $product->get_sale_price());
+                $invoicerow['Discount'] = $item['qty']*(floatval($invoicerow['Price']) - $product->get_sale_price());
                 $invoicerow['DiscountType'] = 'AMOUNT';
             }
 
@@ -93,6 +113,9 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
             $invoicerows[$key] = $invoicerow;
         }
         $order['OrderRows'] = $invoicerows;
+
+        logthis(print_r($order, true));
+
         return $this->generate($root, $order);
     }
 }
