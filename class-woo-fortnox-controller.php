@@ -38,7 +38,7 @@ class WC_Fortnox_Controller {
 
     public function add_fortnox_error_notice( $location ) {
         remove_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
-        return add_query_arg( array( 'fortnox_message' => $this->$WCF_FORTNOX_KEY_ERROR ), $location );
+        return add_query_arg( array( 'fortnox_message' => $this->WCF_FORTNOX_KEY_ERROR ), $location );
     }
 
     public function add_order_error_notice( $location ) {
@@ -48,12 +48,12 @@ class WC_Fortnox_Controller {
 
     public function add_invoice_error_notice( $location ) {
         remove_filter( 'redirect_post_location', array( $this, 'add_invoice_error_notice' ), 99 );
-        return add_query_arg( array( 'fortnox_message' => $this->$WCF_INVOICE_ERROR ), $location );
+        return add_query_arg( array( 'fortnox_message' => $this->WCF_INVOICE_ERROR ), $location );
     }
 
     public function add_bookeeping_error_notice( $location ) {
         remove_filter( 'redirect_post_location', array( $this, 'add_bookeeping_error_notice' ), 99 );
-        return add_query_arg( array( 'fortnox_message' => $this->$WCF_BOOKKEEPING_ERROR ), $location );
+        return add_query_arg( array( 'fortnox_message' => $this->WCF_BOOKKEEPING_ERROR ), $location );
     }
 
     public function add_contact_error_notice( $location ) {
@@ -68,12 +68,12 @@ class WC_Fortnox_Controller {
 
     public function add_order_success_notice( $location ) {
         remove_filter( 'redirect_post_location', array( $this, 'add_order_success_notice' ), 99 );
-        return add_query_arg( array( 'fortnox_message' => $this->$WCF_ORDER_SUCCESS ), $location );
+        return add_query_arg( array( 'fortnox_message' => $this->WCF_ORDER_SUCCESS ), $location );
     }
 
     public function add_product_success_notice( $location ) {
         remove_filter( 'redirect_post_location', array( $this, 'add_product_success_notice' ), 99 );
-        return add_query_arg( array( 'fortnox_message' => $this->$WCF_PRODUCT_SUCCESS ), $location );
+        return add_query_arg( array( 'fortnox_message' => $this->WCF_PRODUCT_SUCCESS ), $location );
     }
 
     /**
@@ -418,10 +418,8 @@ class WC_Fortnox_Controller {
                             );
                         }
                     }
+                    add_filter( 'redirect_post_location', array( $this, 'add_product_success_notice' ), 99 );
                 }
-            }
-            else{
-                add_filter( 'redirect_post_location', array( $this, 'add_product_success_notice' ), 99 );
             }
         }
         else{

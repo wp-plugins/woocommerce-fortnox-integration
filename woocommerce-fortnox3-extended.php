@@ -223,11 +223,11 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                         $message = "WooCommerce Fortnox Integration: Lyckades EJ att skapa kund.";
                         break;
                     case $this->WCF_ORDER_SUCCESS:
-                        $class = "update";
+                        $class = "updated";
                         $message = "WooCommerce Fortnox Integration: Ordern har synkroniserats till Fortnox.";
                         break;
                     case $this->WCF_PRODUCT_SUCCESS:
-                        $class = "update";
+                        $class = "updated";
                         $message = "WooCommerce Fortnox Integration: Produkten har synkroniserats till Fortnox.";
                         break;
                     case $this->WCF_PRODUCT_ERROR:
