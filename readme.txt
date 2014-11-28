@@ -8,8 +8,8 @@ Author URI:        wp-plugs.com
 Author:            Kircher Rode & Wiberg
 Requires at least: 3.8
 Tested up to:      4.0
-Stable tag:        1.35
-Version:           1.35
+Stable tag:        1.36
+Version:           1.36
 
 == Description ==
 
