@@ -49,7 +49,7 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
             $order['DeliveryName'] = $arr->billing_first_name . " " . $arr->billing_last_name;
         }
 
-        $order['VATIncluded'] = 'true';
+        $order['VATIncluded'] = 'false';
         if($options['activate-vat'] == 'on'){
             $order['VATIncluded'] = 'true';
         }
@@ -93,22 +93,9 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
             $invoicerow['DeliveredQuantity'] = $item['qty'];
             $invoicerow['OrderedQuantity'] = $item['qty'];
 
-            $invoicerow['Price'] = $product->get_price_excluding_tax();
+            $invoicerow['Price'] = $this->get_product_price($item);
 
-            if($options['activate-vat'] == 'on'){
-                $invoicerow['Price'] = $product->get_price_including_tax();
-            }
-            else{
-                $invoicerow['Price'] = $product->get_price_excluding_tax();
-            }
-
-            $invoicerow['VAT'] = $item['tax_class'];
-            //discount
-            if($product->is_on_sale()){
-                $invoicerow['Discount'] = $item['qty']*(floatval($invoicerow['Price']) - $product->get_sale_price());
-                $invoicerow['DiscountType'] = 'AMOUNT';
-            }
-
+            $invoicerow['VAT'] = $this->get_tax_class_by_tax_name($item['tax_class']);
             $index += 1;
             $invoicerows[$key] = $invoicerow;
         }
@@ -117,5 +104,18 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
         logthis(print_r($order, true));
 
         return $this->generate($root, $order);
+    }
+
+    private function get_product_price($product){
+        return floatval($product['line_total']);
+    }
+
+    public function get_tax_class_by_tax_name( $tax_name ) {
+        global $wpdb;
+        if($tax_name == ''){
+            return 25;
+        }
+        $tax_rate = $wpdb->get_var( $wpdb->prepare( "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_name = %d", $tax_name ) );
+        return intval($tax_rate);
     }
 }

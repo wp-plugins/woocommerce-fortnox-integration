@@ -6,11 +6,11 @@
  * Time: 10:47 AM
  */
 if(!defined('TESTING')){
-    define('TESTING', true);
+    define('TESTING', false);
 }
 
 if(!defined('AUTOMATED_TESTING')){
-    define('AUTOMATED_TESTING', true);
+    define('AUTOMATED_TESTING', false);
 }
 
 class WC_Fortnox_Controller {
