@@ -20,18 +20,19 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
      */
     public function create($arr, $customerNumber){
 
-        $order_options = $options = get_option('woocommerce_fortnox_order_settings');
+        $orderOptions = $options = get_option('woocommerce_fortnox_order_settings');
         $options = get_option('woocommerce_fortnox_general_settings');
 
         $root = 'Order';
         $order['DocumentNumber'] = $arr->id;
-        $order['AdministrationFee'] = $order_options['admin-fee'];
+        $order['AdministrationFee'] = $orderOptions['admin-fee'];
         $order['OrderDate'] =  substr($arr->order_date, 0, 10);
         $order['DeliveryDate'] = substr($arr->order_date, 0, 10);
         $order['Currency'] = $arr->get_order_currency();
         $order['CurrencyRate'] = '1';
         $order['CurrencyUnit'] = '1';
-        $order['Freight'] = $arr->get_total_shipping();
+        $order['YourOrderNumber'] = $arr->id;
+
         $order['CustomerNumber'] = $customerNumber;
         $order['Address1'] = $arr->billing_address_1;
         $order['City'] = $arr->billing_city;
@@ -50,15 +51,22 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
         }
 
         $order['VATIncluded'] = 'false';
+        $order['Freight'] = $arr->get_total_shipping();
         if($options['activate-vat'] == 'on'){
             $order['VATIncluded'] = 'true';
+            $shippingTax = $arr->get_shipping_tax();
+            if(intval($shippingTax) == 0){
+                $order['Freight'] = $arr->get_total_shipping() * 0.8;
+            }
+            $order['AdministrationFee'] = $orderOptions['admin-fee'] * 0.8;
+
         }
         else{
             $order['VATIncluded'] = 'false';
         }
 
 
-        if($order_options['add-payment-type'] == 'on'){
+        if($orderOptions['add-payment-type'] == 'on'){
             $payment_method = get_post_meta( $arr->id, '_payment_method_title');
             $order['Remarks'] = $payment_method[0];
         }
