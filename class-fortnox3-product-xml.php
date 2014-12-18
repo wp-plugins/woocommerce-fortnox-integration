@@ -41,7 +41,7 @@ class WCF_Product_XML_Document extends WCF_XML_Document{
         $productNode = array();
         $productNode['Description'] = $product->get_title();
         $productNode['ArticleNumber'] = $product->get_sku();
-        $productNode['QuantityInStock'] = $product->get_stock_quantity();
+        $productNode['QuantityInStock'] = $product->managing_stock() ? $product->get_stock_quantity() : 0;
         $productNode['Unit'] = 'st';
         return $this->generate($root, $productNode);
     }
@@ -65,6 +65,7 @@ class WCF_Product_XML_Document extends WCF_XML_Document{
         else{
             $price['PriceList'] = $meta['pricelist_id'];
         }
+
         if($options['activate-vat'] == 'on'){
             $price['Price'] = $product->get_price_including_tax();
             logthis('YES');
@@ -73,6 +74,8 @@ class WCF_Product_XML_Document extends WCF_XML_Document{
             $price['Price'] = $product->get_price_excluding_tax();
             logthis('NO');
         }
+
+
         $price['ArticleNumber'] = $product->get_sku();
         $price['FromQuantity'] = 1;
 
@@ -92,6 +95,9 @@ class WCF_Product_XML_Document extends WCF_XML_Document{
         $price = array();
 
         $options = get_option('woocommerce_fortnox_general_settings');
+
+        $price['Price'] = $product->get_price_excluding_tax();
+
         if($options['activate-vat'] == 'on'){
             $price['Price'] = $product->get_price_including_tax();
             logthis('YES');
@@ -100,7 +106,7 @@ class WCF_Product_XML_Document extends WCF_XML_Document{
             $price['Price'] = $product->get_price_excluding_tax();
             logthis('NO');
         }
-
+        logthis(print_r($price, true));
         return $this->generate($root, $price);
     }
 }
