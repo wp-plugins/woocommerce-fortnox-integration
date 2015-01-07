@@ -9,7 +9,7 @@ Author:            Advanced Wp-Plugs
 Requires at least: 3.8
 Tested up to:      4.0
 Stable tag:        1.0
-Version:           1.38
+Version:           1.39
 
 == Description ==
 
@@ -74,5 +74,5 @@ http://wp-plugs.com/woocommerce-fortnox/
 
 == Changelog ==
 
-= 1.38 =
+= 1.39 =
 * General bugfixes
