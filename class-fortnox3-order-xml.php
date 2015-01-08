@@ -20,18 +20,19 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
      */
     public function create($arr, $customerNumber){
 
-        $order_options = $options = get_option('woocommerce_fortnox_order_settings');
+        $orderOptions = $options = get_option('woocommerce_fortnox_order_settings');
         $options = get_option('woocommerce_fortnox_general_settings');
 
         $root = 'Order';
         $order['DocumentNumber'] = $arr->id;
-        $order['AdministrationFee'] = $order_options['admin-fee'];
+        $order['AdministrationFee'] = $orderOptions['admin-fee'];
         $order['OrderDate'] =  substr($arr->order_date, 0, 10);
         $order['DeliveryDate'] = substr($arr->order_date, 0, 10);
         $order['Currency'] = $arr->get_order_currency();
         $order['CurrencyRate'] = '1';
         $order['CurrencyUnit'] = '1';
-        $order['Freight'] = $arr->get_total_shipping();
+        $order['YourOrderNumber'] = $arr->id;
+
         $order['CustomerNumber'] = $customerNumber;
         $order['Address1'] = $arr->billing_address_1;
         $order['City'] = $arr->billing_city;
@@ -41,10 +42,34 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
         $order['DeliveryCity'] = $arr->shipping_city;
         $order['DeliveryCountry'] = $this->countries[$arr->shipping_country];
         $order['DeliveryZipCode'] =  $arr->shipping_postcode;
-        $order['CustomerName'] = $arr->billing_first_name . " " . $arr->billing_last_name;
-        $order['DeliveryName'] = $arr->billing_first_name . " " . $arr->billing_last_name;
-        $order['VATIncluded'] = 'true';
 
+        if(isset($arr->billing_company)){
+            $order['CustomerName'] = $arr->billing_first_name . " " . $arr->billing_last_name . " " . $arr->billing_company;
+        }
+        else{
+            $order['DeliveryName'] = $arr->billing_first_name . " " . $arr->billing_last_name;
+        }
+
+        $order['VATIncluded'] = 'false';
+        $order['Freight'] = $arr->get_total_shipping();
+        if($options['activate-vat'] == 'on'){
+            $order['VATIncluded'] = 'true';
+            $shippingTax = $arr->get_shipping_tax();
+            if(intval($shippingTax) == 0){
+                $order['Freight'] = $arr->get_total_shipping() * 0.8;
+            }
+            $order['AdministrationFee'] = $orderOptions['admin-fee'] * 0.8;
+
+        }
+        else{
+            $order['VATIncluded'] = 'false';
+        }
+
+
+        if($orderOptions['add-payment-type'] == 'on'){
+            $payment_method = get_post_meta( $arr->id, '_payment_method_title');
+            $order['Remarks'] = $payment_method[0];
+        }
         $email = array();
         $email['EmailAddressTo'] = $arr->billing_email;
         $order['EmailInformation'] =  $email;
@@ -68,6 +93,7 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
             }
 
             $product = $pf->get_product($productId);
+            logthis(print_r($product, true));
             $invoicerow = array();
             $invoicerow['ArticleNumber'] = $product->get_sku();
             $invoicerow['Description'] = $item['name'];
@@ -75,24 +101,29 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
             $invoicerow['DeliveredQuantity'] = $item['qty'];
             $invoicerow['OrderedQuantity'] = $item['qty'];
 
-            if($options['activate-vat'] == 'on'){
-                $invoicerow['Price'] = $product->get_price_including_tax();
-            }
-            else{
-                $invoicerow['Price'] = $product->get_price_excluding_tax();
-            }
+            $invoicerow['Price'] = $this->get_product_price($item)/$item['qty'];
 
-            $invoicerow['VAT'] = $item['tax_class'];
-            //discount
-            if($product->is_on_sale()){
-                $invoicerow['Discount'] = $item['qty']*($product->get_regular_price() - $product->get_sale_price());
-                $invoicerow['DiscountType'] = 'AMOUNT';
-            }
-
+            $invoicerow['VAT'] = $this->get_tax_class_by_tax_name($item['tax_class']);
             $index += 1;
             $invoicerows[$key] = $invoicerow;
         }
         $order['OrderRows'] = $invoicerows;
+
+        logthis(print_r($order, true));
+
         return $this->generate($root, $order);
+    }
+
+    private function get_product_price($product){
+        return floatval($product['line_total']);
+    }
+
+    public function get_tax_class_by_tax_name( $tax_name ) {
+        global $wpdb;
+        if($tax_name == ''){
+            return 25;
+        }
+        $tax_rate = $wpdb->get_var( $wpdb->prepare( "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_name = %d", $tax_name ) );
+        return intval($tax_rate);
     }
 }

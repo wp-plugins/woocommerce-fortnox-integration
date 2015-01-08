@@ -16,6 +16,8 @@ class WCF_API{
     /** @public String api key */
     public $api_key;
 
+    /** @public String api key */
+    public $has_error;
     /**
      *
      */
@@ -172,6 +174,17 @@ class WCF_API{
     }
 
     /**
+     * Creates a HttpRequest for an article for given SKU
+     *
+     * @access public
+     * @return mixed
+     */
+    public function get_article($sku){
+        logthis("GET ARTICLE REQUEST");
+        return $this->make_get_request($this->build_url("articles/" . $sku));
+    }
+
+    /**
      * Creates a HttpRequest for fetching all customer and appends the given XML to the request and sends it to Fortnox
      *
      * @access public
@@ -179,7 +192,7 @@ class WCF_API{
      */
     public function get_customers(){
         logthis("GET CUSTOMER REQUEST");
-        return $this->make_get_request($this->build_url("customers"));
+        return $this->make_get_request($this->build_url("customers/?limit=500"));
     }
 
     /**
@@ -190,7 +203,7 @@ class WCF_API{
      */
     public function get_inventory(){
         logthis("GET INVENTORY REQUEST");
-        return $this->make_get_request($this->build_url("articles"));
+        return $this->make_get_request($this->build_url("articles/?limit=500"));
     }
 
     /**
@@ -230,6 +243,9 @@ class WCF_API{
         if($this->access_token){
             update_option( 'fortnox_access_token', $this->access_token, '', 'yes' );
         }
+        else{
+            $this->has_error = true;
+        }
         logthis(print_r($arrayData, true));
         curl_close($ch);
         return false;
@@ -267,7 +283,7 @@ class WCF_API{
         logthis(print_r($arrayData, true));
 
         //Send error to plugapi
-        if (array_key_exists("Error",$arrayData)){
+        if (array_key_exists("Error", $arrayData)){
             logthis("FORTNOX ERROR");
             $this->post_error($arrayData['Message']);
         }
@@ -310,7 +326,7 @@ class WCF_API{
         logthis(print_r($arrayData, true));
 
         //Send error to plugapi
-        if (array_key_exists("Error",$arrayData)){
+        if (array_key_exists("Error", $arrayData)){
             logthis("FORTNOX ERROR");
             $this->post_error($arrayData['Message']);
         }
@@ -357,7 +373,7 @@ class WCF_API{
         logthis(print_r($array_data, true));
 
         //Send error to plugapi
-        if (array_key_exists("Error",$array_data)){
+        if (array_key_exists("Error", $array_data)){
             logthis("FORTNOX ERROR");
             $this->post_error($array_data['Message']);
         }
