@@ -101,7 +101,7 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
             $invoicerow['DeliveredQuantity'] = $item['qty'];
             $invoicerow['OrderedQuantity'] = $item['qty'];
 
-            $invoicerow['Price'] = $this->get_product_price($item);
+            $invoicerow['Price'] = $this->get_product_price($item)/$item['qty'];
 
             $invoicerow['VAT'] = $this->get_tax_class_by_tax_name($item['tax_class']);
             $index += 1;
