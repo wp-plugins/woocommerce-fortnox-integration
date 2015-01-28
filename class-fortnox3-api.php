@@ -16,6 +16,8 @@ class WCF_API{
     /** @public String api key */
     public $api_key;
 
+    /** @public String api key */
+    public $has_error;
     /**
      *
      */
@@ -63,7 +65,7 @@ class WCF_API{
         curl_setopt ($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt ($ch, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt ($ch, CURLOPT_SSL_VERIFYPEER, 0);
-
+        curl_setopt($ch,CURLOPT_TIMEOUT,3);
         $data = curl_exec($ch);
         curl_close($ch);
         logthis($data);
@@ -172,14 +174,38 @@ class WCF_API{
     }
 
     /**
+     * Creates a HttpRequest for an article for given SKU
+     *
+     * @access public
+     * @return mixed
+     */
+    public function get_article($sku){
+        logthis("GET ARTICLE REQUEST " . $sku);
+        return $this->make_get_request($this->build_url("articles/" . $sku));
+    }
+
+    /**
      * Creates a HttpRequest for fetching all customer and appends the given XML to the request and sends it to Fortnox
      *
      * @access public
-     * @return bool
+     * @return array
      */
     public function get_customers(){
         logthis("GET CUSTOMER REQUEST");
-        return $this->make_get_request($this->build_url("customers"));
+        $response = $this->make_get_request($this->build_url("customers/?limit=500"));
+        $customers = $response['CustomerSubset'];
+        if($response['@attributes']['TotalPages'] > 1){
+
+            $currentPage = $response['@attributes']['CurrentPage'];
+            $totalPages = $response['@attributes']['TotalPages'];
+
+            for($i = $currentPage + 1; $i <= $totalPages; $i++){
+                $response = $this->make_get_request($this->build_url("customers/?limit=500&page=" . $i));
+                $customers = array_merge($customers, $response['CustomerSubset']);
+            }
+        }
+        logthis(print_r($customers, true));
+        return $customers;
     }
 
     /**
@@ -190,7 +216,7 @@ class WCF_API{
      */
     public function get_inventory(){
         logthis("GET INVENTORY REQUEST");
-        return $this->make_get_request($this->build_url("articles"));
+        return $this->make_get_request($this->build_url("articles/?limit=500"));
     }
 
     /**
@@ -230,6 +256,9 @@ class WCF_API{
         if($this->access_token){
             update_option( 'fortnox_access_token', $this->access_token, '', 'yes' );
         }
+        else{
+            $this->has_error = true;
+        }
         logthis(print_r($arrayData, true));
         curl_close($ch);
         return false;
@@ -267,7 +296,7 @@ class WCF_API{
         logthis(print_r($arrayData, true));
 
         //Send error to plugapi
-        if (array_key_exists("Error",$arrayData)){
+        if (array_key_exists("Error", $arrayData)){
             logthis("FORTNOX ERROR");
             $this->post_error($arrayData['Message']);
         }
@@ -310,7 +339,7 @@ class WCF_API{
         logthis(print_r($arrayData, true));
 
         //Send error to plugapi
-        if (array_key_exists("Error",$arrayData)){
+        if (array_key_exists("Error", $arrayData)){
             logthis("FORTNOX ERROR");
             $this->post_error($arrayData['Message']);
         }
@@ -357,7 +386,7 @@ class WCF_API{
         logthis(print_r($array_data, true));
 
         //Send error to plugapi
-        if (array_key_exists("Error",$array_data)){
+        if (array_key_exists("Error", $array_data)){
             logthis("FORTNOX ERROR");
             $this->post_error($array_data['Message']);
         }
@@ -405,7 +434,13 @@ class WCF_API{
         return $this->make_put_request($this->build_url("prices/A/" . $sku . "/0"), $xml);
     }
 
-
+    /**
+     * Creates a HttpRequest for an update of a product and appends the given XML to the request and sends it to Fortnox
+     *
+     * @access private
+     * @param mixed $message
+     * @return bool
+     */
     private function post_error($message){
         if(!isset($this->api_key)){
             return false;
