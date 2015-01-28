@@ -65,7 +65,7 @@ class WCF_API{
         curl_setopt ($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt ($ch, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt ($ch, CURLOPT_SSL_VERIFYPEER, 0);
-
+        curl_setopt($ch,CURLOPT_TIMEOUT,3);
         $data = curl_exec($ch);
         curl_close($ch);
         logthis($data);
@@ -180,7 +180,7 @@ class WCF_API{
      * @return mixed
      */
     public function get_article($sku){
-        logthis("GET ARTICLE REQUEST");
+        logthis("GET ARTICLE REQUEST " . $sku);
         return $this->make_get_request($this->build_url("articles/" . $sku));
     }
 
@@ -188,11 +188,24 @@ class WCF_API{
      * Creates a HttpRequest for fetching all customer and appends the given XML to the request and sends it to Fortnox
      *
      * @access public
-     * @return bool
+     * @return array
      */
     public function get_customers(){
         logthis("GET CUSTOMER REQUEST");
-        return $this->make_get_request($this->build_url("customers/?limit=500"));
+        $response = $this->make_get_request($this->build_url("customers/?limit=500"));
+        $customers = $response['CustomerSubset'];
+        if($response['@attributes']['TotalPages'] > 1){
+
+            $currentPage = $response['@attributes']['CurrentPage'];
+            $totalPages = $response['@attributes']['TotalPages'];
+
+            for($i = $currentPage + 1; $i <= $totalPages; $i++){
+                $response = $this->make_get_request($this->build_url("customers/?limit=500&page=" . $i));
+                $customers = array_merge($customers, $response['CustomerSubset']);
+            }
+        }
+        logthis(print_r($customers, true));
+        return $customers;
     }
 
     /**
@@ -421,7 +434,13 @@ class WCF_API{
         return $this->make_put_request($this->build_url("prices/A/" . $sku . "/0"), $xml);
     }
 
-
+    /**
+     * Creates a HttpRequest for an update of a product and appends the given XML to the request and sends it to Fortnox
+     *
+     * @access private
+     * @param mixed $message
+     * @return bool
+     */
     private function post_error($message){
         if(!isset($this->api_key)){
             return false;

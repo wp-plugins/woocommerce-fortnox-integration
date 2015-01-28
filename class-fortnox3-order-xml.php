@@ -16,9 +16,10 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
      * @access public
      * @param mixed $arr
      * @param $customerNumber
+     * @param $update
      * @return mixed
      */
-    public function create($arr, $customerNumber){
+    public function create($arr, $customerNumber, $update){
 
         $orderOptions = $options = get_option('woocommerce_fortnox_order_settings');
         $options = get_option('woocommerce_fortnox_general_settings');
@@ -50,26 +51,23 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
             $order['DeliveryName'] = $arr->billing_first_name . " " . $arr->billing_last_name;
         }
 
-        $order['VATIncluded'] = 'false';
-        $order['Freight'] = $arr->get_total_shipping();
-        if($options['activate-vat'] == 'on'){
-            $order['VATIncluded'] = 'true';
-            $shippingTax = $arr->get_shipping_tax();
-            if(intval($shippingTax) == 0){
-                $order['Freight'] = $arr->get_total_shipping() * 0.8;
-            }
-            $order['AdministrationFee'] = $orderOptions['admin-fee'] * 0.8;
-
+        if($update){
+            $order['Freight'] = $arr->get_total_shipping() + $arr->get_shipping_tax();
         }
         else{
-            $order['VATIncluded'] = 'false';
+            $order['Freight'] = $arr->get_total_shipping();
         }
+
+        $order['VATIncluded'] = 'true';
+
+        $order['AdministrationFee'] = $orderOptions['admin-fee'];
 
 
         if($orderOptions['add-payment-type'] == 'on'){
             $payment_method = get_post_meta( $arr->id, '_payment_method_title');
             $order['Remarks'] = $payment_method[0];
         }
+
         $email = array();
         $email['EmailAddressTo'] = $arr->billing_email;
         $order['EmailInformation'] =  $email;
@@ -93,9 +91,13 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
             }
 
             $product = $pf->get_product($productId);
-            logthis(print_r($product, true));
+
+            //handles missing product
             $invoicerow = array();
-            $invoicerow['ArticleNumber'] = $product->get_sku();
+            if(!$product === NULL){
+                $invoicerow['ArticleNumber'] = $product->get_sku();
+            }
+
             $invoicerow['Description'] = $item['name'];
             $invoicerow['Unit'] = 'st';
             $invoicerow['DeliveredQuantity'] = $item['qty'];
@@ -107,6 +109,27 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
             $index += 1;
             $invoicerows[$key] = $invoicerow;
         }
+
+        if($arr->get_total_discount() > 0){
+
+            logthis(print_r($arr->get_used_coupons()[0], true));
+            $coupon = new WC_Coupon($arr->get_used_coupons()[0]);
+            if(!$coupon->apply_before_tax()){
+                $key = "OrderRow" . $index;
+                $invoicerow = array();
+
+                $invoicerow['Description'] = "Rabatt";
+                $invoicerow['Unit'] = 'st';
+                $invoicerow['DeliveredQuantity'] = 1;
+                $invoicerow['OrderedQuantity'] = 1;
+
+                $invoicerow['Price'] = -1 * $arr->get_total_discount();
+
+                $invoicerow['VAT'] = 0;
+                $invoicerows[$key] = $invoicerow;
+            }
+        }
+
         $order['OrderRows'] = $invoicerows;
 
         logthis(print_r($order, true));
@@ -115,7 +138,7 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
     }
 
     private function get_product_price($product){
-        return floatval($product['line_total']);
+        return floatval($product['line_total'] + $product['line_tax']);
     }
 
     public function get_tax_class_by_tax_name( $tax_name ) {

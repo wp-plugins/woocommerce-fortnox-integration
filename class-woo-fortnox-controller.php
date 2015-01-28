@@ -30,6 +30,7 @@ class WC_Fortnox_Controller {
     private $FORTNOX_ERROR_CODE_PRODUCT_NOT_EXIST = 2000513;
     private $FORTNOX_ERROR_CODE_PRODUCT_PRICE_EXIST = 2000762;
     private $FORTNOX_ERROR_CODE_ARTICLE_NUMBER_MISSING = 2001846;
+    private $FORTNOX_ERROR_CODE_ARTICLE_PRICELIST_ERROR = 2000342;
 
     public function add_api_key_error_notice( $location ) {
         remove_filter( 'redirect_post_location', array( $this, 'add_api_key_error_notice' ), 99 );
@@ -81,7 +82,7 @@ class WC_Fortnox_Controller {
      *
      * @access public
      * @param int $orderId
-     * @return void
+     * @return boolean
      */
     public function send_contact_to_fortnox($orderId) {
         global $wcdn, $woocommerce;
@@ -96,22 +97,24 @@ class WC_Fortnox_Controller {
             $customerNumber = $this->get_or_create_customer($order);
 
             if(!$customerNumber){
-                return;
+                return false;
             }
 
             if(!isset($options['activate-orders'])){
-                return;
+                return false;
             }
 
             if($options['activate-orders'] == 'on'){
                 $orderNumber = $this->send_order_to_fortnox($orderId, $customerNumber);
-                if($orderNumber == 0){
-                    return;
+                if(!$orderNumber){
+                    return false;
                 }
             }
+            return true;
         }
         else{
             add_filter( 'redirect_post_location', array( $this, 'add_api_key_error_notice' ), 99 );
+            return false;
         }
     }
 
@@ -148,11 +151,16 @@ class WC_Fortnox_Controller {
             }
             //create Order XML
             $orderDoc = new WCF_Order_XML_Document();
-            $orderXml = $orderDoc->create($order, $customerNumber);
-
+            $orderXml = $orderDoc->create($order, $customerNumber, false);
+            if(!$orderXml){
+                add_filter( 'redirect_post_location', array( $this, 'add_order_error_notice' ), 99 );
+                if(!AUTOMATED_TESTING){
+                    return false;
+                }
+            }
             //send Order XML
             $orderResponse = $apiInterface->create_order_request($orderXml);
-
+            $this->check_order_difference($order, $orderResponse);
             if(AUTOMATED_TESTING){
                 $action = 'create';
             }
@@ -162,13 +170,14 @@ class WC_Fortnox_Controller {
                 // if order exists
                 if((int)$orderResponse['Code'] == $this->FORTNOX_ERROR_CODE_ORDER_EXISTS){
                     logthis("ORDER EXISTS");
+                    $orderXml = $orderDoc->create($order, $customerNumber, true);
                     $orderResponse = $apiInterface->update_order_request($orderXml, $orderId);
-
+                    $this->check_order_difference($order, $orderResponse);
                     //Handle error
                     if(array_key_exists('Error', $orderResponse)){
                         add_filter( 'redirect_post_location', array( $this, 'add_order_error_notice' ), 99 );
                         if(!AUTOMATED_TESTING){
-                            return 0;
+                            return false;
                         }
                     }
 
@@ -177,7 +186,7 @@ class WC_Fortnox_Controller {
                     }
                 }
                 // if products dont exist
-                elseif((int)$orderResponse['Code'] == $this->FORTNOX_ERROR_CODE_PRODUCT_NOT_EXIST){
+                elseif((int)$orderResponse['Code'] == $this->FORTNOX_ERROR_CODE_ORDER_PRODUCT_NOT_EXIST){
                     logthis("PRODUCT DOES NOT EXIST");
 
                     foreach($order->get_items() as $item){
@@ -190,12 +199,15 @@ class WC_Fortnox_Controller {
                         }
                         $this->send_product_to_fortnox($productId);
                     }
+
                     $orderResponse = $apiInterface->create_order_request($orderXml);
+
+                    $this->check_order_difference($order, $orderResponse);
 
                     if(array_key_exists('Error', $orderResponse)){
                         add_filter( 'redirect_post_location', array( $this, 'add_order_error_notice' ), 99 );
                         if(!AUTOMATED_TESTING){
-                            return 0;
+                            return false;
                         }
                     }
 
@@ -211,7 +223,7 @@ class WC_Fortnox_Controller {
                     $database->create_unsynced_order($orderId);
                     add_filter( 'redirect_post_location', array( $this, 'add_order_error_notice' ), 99 );
                     if(!AUTOMATED_TESTING){
-                        return 0;
+                        return false;
                     }
                 }
             }
@@ -223,7 +235,7 @@ class WC_Fortnox_Controller {
                     );
                 };
                 add_filter( 'redirect_post_location', array( $this, 'add_order_success_notice' ), 99 );
-                return;
+                return true;
             }
             if($options['activate-invoices'] == 'on'){
                 //Create invoice
@@ -232,7 +244,7 @@ class WC_Fortnox_Controller {
                 if(array_key_exists('Error', $invoiceResponse)){
                     add_filter( 'redirect_post_location', array( $this, 'add_invoice_error_notice' ), 99 );
                     if(!AUTOMATED_TESTING){
-                        return 0;
+                        return false;
                     }
                 }
 
@@ -244,7 +256,7 @@ class WC_Fortnox_Controller {
                     if(array_key_exists('Error', $bookkeptResponse)){
                         add_filter( 'redirect_post_location', array( $this, 'add_bookkeping_error_notice' ), 99 );
                         if(!AUTOMATED_TESTING){
-                            return 0;
+                            return false;
                         }
                     }
                 }
@@ -257,6 +269,7 @@ class WC_Fortnox_Controller {
                 'order_response' => $orderResponse,
             );
         };
+        return true;
     }
 
     /**
@@ -283,15 +296,10 @@ class WC_Fortnox_Controller {
                     include_once("class-fortnox3-product-xml.php");
                     include_once("class-fortnox3-database-interface.php");
                     include_once("class-fortnox3-api.php");
-
+                    $has_children = false;
                     //fetch Product
                     $pf = new WC_Product_Factory();
                     $product = $pf->get_product($productId);
-
-                    //child logic
-                    if(AUTOMATED_TESTING){
-                        $has_children = false;
-                    };
 
                     if($product->has_child()){
                         logthis("HAS CHILD");
@@ -340,6 +348,8 @@ class WC_Fortnox_Controller {
                         $productPriceXml = $productDoc->update_price($product);
                         $priceResponse = $apiInterface->update_product_price_request($productPriceXml, $sku);
 
+                        $this->handle_pricelist_error($priceResponse, $product, $productDoc, $apiInterface);
+
                         //Error handling
                         if(array_key_exists('Code', $updateResponse)){
                             //Product does not exist
@@ -365,6 +375,8 @@ class WC_Fortnox_Controller {
                                 //update price
                                 $productPriceXml = $productDoc->update_price($product);
                                 $priceResponse = $apiInterface->update_product_price_request($productPriceXml, $fortnoxId);
+
+                                $this->handle_pricelist_error($priceResponse, $product, $productDoc, $apiInterface);
 
                                 if(AUTOMATED_TESTING){
                                     return array(
@@ -410,6 +422,8 @@ class WC_Fortnox_Controller {
                         $productPriceXml = $productDoc->update_price($product);
                         $priceResponse = $apiInterface->update_product_price_request($productPriceXml, $fortnoxId);
 
+                        $this->handle_pricelist_error($priceResponse, $product, $productDoc, $apiInterface);
+
                         if(AUTOMATED_TESTING){
                             return array(
                                 'action' => 'create',
@@ -424,6 +438,16 @@ class WC_Fortnox_Controller {
         }
         else{
             add_filter( 'redirect_post_location', array( $this, 'add_api_key_error_notice' ), 99 );
+        }
+    }
+
+
+    private function handle_pricelist_error($priceResponse, $product, $productDoc, $apiInterface){
+        if(array_key_exists('Code', $priceResponse)){
+            if((int)$priceResponse['Code'] == $this->FORTNOX_ERROR_CODE_ARTICLE_PRICELIST_ERROR){
+                $productPriceXml = $productDoc->create_price($product);
+                $apiInterface->create_product_price_request($productPriceXml);
+            }
         }
     }
 
@@ -459,11 +483,53 @@ class WC_Fortnox_Controller {
         $databaseInterface = new WCF_Database_Interface();
 
         foreach($customers as $customer){
-            foreach($customer as $c){
-                $databaseInterface->create_existing_customer($c);
-            }
+            $databaseInterface->create_existing_customer($customer);
+
         }
         return "Kontakter synkroniserade.";
+    }
+
+    /**
+     * Sends ALL orders to Fortnox API
+     *
+     * @access public
+     * @return bool
+     */
+    public function sync_all_orders_to_fortnox() {
+        include_once("class-fortnox3-api.php");
+        logthis("POST");
+        //Init API
+        $apiInterface = new WCF_API();
+
+        if(!$apiInterface->create_api_validation_request()){
+            add_filter( 'redirect_post_location', array( $this, 'add_api_key_error_notice' ), 99 );
+            return "Er API-Nyckel är ej giltig.";
+        }
+
+        if($apiInterface->has_error){
+            add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
+            return "Inloggning till Fortnox misslyckades";
+        }
+        $args = array(
+            'post_type' => 'shop_order',
+            'post_status' => 'wc-completed',
+            'orderby' => 'id',
+            'posts_per_page' => -1                                                                                                                                                                                                                                         ,
+        );
+        logthis("POST");
+        $the_query = new WP_Query( $args );
+        foreach($the_query->get_posts() as $db_order){
+            $order = new WC_Order($db_order->ID);
+            if($order->has_status( 'completed' )){
+                $check = $this->send_contact_to_fortnox($db_order->ID);
+                if(!$check){
+                    logthis("ORDER FAILED: " . $db_order->ID);
+                }
+            }
+
+        }
+
+        return "Ordrar synkroniserade.";
     }
 
     /**
@@ -504,7 +570,7 @@ class WC_Fortnox_Controller {
 
             //create Order XML
             $orderDoc = new WCF_Order_XML_Document();
-            $orderXml = $orderDoc->create($order, $customerNumber);
+            $orderXml = $orderDoc->create($order, $customerNumber, false);
 
             //send Order XML
             $orderResponse = $apiInterface->create_order_request($orderXml);
@@ -554,7 +620,7 @@ class WC_Fortnox_Controller {
         }
 
         $args = array(
-            'post_type' => 'product',
+            'post_type' => 'product', 'product_variation',
             'orderby' => 'id',
             'posts_per_page' => -1,
         );
@@ -648,7 +714,7 @@ class WC_Fortnox_Controller {
         }
 
         $args = array(
-            'post_type' => 'product',
+            'post_type' => array('product', 'product_variation'),
             'orderby' => 'id',
             'posts_per_page' => -1                                                                                                                                                                                                                                         ,
         );
@@ -721,9 +787,130 @@ class WC_Fortnox_Controller {
             }
         }
         return "Lager uppdaterat";
-
     }
 
+    /**
+     * Fetches product stock for every product in Woo from Fortnox
+     *
+     * @return bool
+     */
+    public function diff_woo_fortnox_inventory(){
+        include_once("class-fortnox3-api.php");
+
+        logthis('DIFF');
+        //Init API
+        $apiInterface = new WCF_API();
+
+        if(!$apiInterface->create_api_validation_request()){
+            add_filter( 'redirect_post_location', array( $this, 'add_api_key_error_notice' ), 99 );
+        }
+
+        if($apiInterface->has_error){
+            add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
+        }
+
+        $args = array(
+            'post_type' => 'product',
+            'orderby' => 'id',
+            'posts_per_page' => -1                                                                                                                                                                                                                                         ,
+        );
+        $the_query = new WP_Query( $args );
+
+        $missing = array();
+        $missing_sku = array();
+        foreach($the_query->get_posts() as $fetched_product){
+
+            $pf = new WC_Product_Factory();
+            $product = $pf->get_product($fetched_product->ID);
+
+            //Init API
+            $apiInterface = new WCF_API();
+            if($apiInterface->has_error){
+                add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
+            }
+
+            if($product->has_child()){
+
+                $totalAmount = 0;
+
+                foreach($product->get_children() as $childId){
+
+                    $child = $pf->get_product($childId);
+                    $sku = $child->get_sku();
+                    $article = $apiInterface->get_article($sku);
+                    if($sku === NULL){
+                        array_push($missing_sku, "VARIANT ID:" .$childId);
+                    }
+                    if(array_key_exists('Error', $article)){
+                        array_push($missing, "VARIANT ID:" .$childId . " SKU:" .$sku);
+                    }
+                }
+            }
+            else{
+                $sku = $product->get_sku();
+                $article = $apiInterface->get_article($sku);
+                if($sku === NULL){
+                    array_push($missing_sku, "VARIANT ID:" .$fetched_product->ID);
+                }
+                if(array_key_exists('Error', $article)){
+                    array_push($missing, "PRODUKT ID:" .$fetched_product->ID . " SKU:" .$sku);
+                }
+            }
+        }
+        logthis(print_r($missing, true));
+        return print_r($missing, true);
+    }
+
+
+    /**
+     * Fetches product stock for every product in Woo from Fortnox
+     *
+     * @return bool
+     */
+    public function SKU_clean(){
+        $args = array(
+            'post_type' => array('product', 'product_variation'),
+            'orderby' => 'id',
+            'posts_per_page' => -1                                                                                                                                                                                                                                         ,
+        );
+        $the_query = new WP_Query( $args );
+
+        logthis("BEGINNING");
+        $index = 0;
+        foreach($the_query->get_posts() as $fetched_product){
+
+            $pf = new WC_Product_Factory();
+            $product = $pf->get_product($fetched_product->ID);
+
+
+
+            if($product->has_child()){
+
+                foreach($product->get_children() as $childId){
+                    logthis($childId);
+                    $child = $pf->get_product($childId);
+                    $sku = $child->get_sku();
+                    $sku = $this->clean_str($sku);
+                    update_post_meta($childId, '_sku', $sku);
+                    $index++;
+                }
+            }
+            else{
+                logthis($fetched_product->ID);
+                $sku = $product->get_sku();
+                $sku = $this->clean_str($sku);
+                update_post_meta($fetched_product->ID, '_sku', $sku);
+                $index++;
+            }
+        }
+        return "SKUs cleaned: ". $index;
+    }
+
+    private function clean_str($sku){
+        $sku = preg_replace('/\s+/', '', $sku);
+        $sku = str_replace('.', '', $sku);
+        return $sku;
+    }
 
     /***********************************************************************************************************
      * WP-PLUGS API FUNCTIONS
@@ -749,6 +936,7 @@ class WC_Fortnox_Controller {
      * @return int
      */
     private function get_or_create_customer($order){
+        include_once("class-fortnox3-contact-xml.php");
         $databaseInterface = new WCF_Database_Interface();
         $customer = $databaseInterface->get_customer_by_email($order->billing_email);
 
@@ -786,4 +974,29 @@ class WC_Fortnox_Controller {
         return $customerNumber;
     }
 
+    /**
+     * Creates meta if order in Woo differences from Fortnox
+     *
+     * @access public
+     * @param $order
+     * @param $orderResponse
+     * @return int
+     */
+    private function check_order_difference($order, $orderResponse){
+        $total = $order->get_total();
+
+        logthis("ORDER DIFF");
+        if(array_key_exists('TotalToPay', $orderResponse)){
+            logthis("ORDERINE " . $total . " " . $orderResponse['TotalToPay']);
+            if($total != floatval($orderResponse['TotalToPay'])){
+                logthis("NETORDER" .$order->id);
+                update_post_meta($order->id, "_fortnox_difference_order", $total - floatval($orderResponse['TotalToPay']));
+            }
+            else{
+                delete_post_meta($order->id, "_fortnox_difference_order");
+            }
+        }
+
+
+    }
 }

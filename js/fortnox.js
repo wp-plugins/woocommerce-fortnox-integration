@@ -46,3 +46,34 @@ function send_support_mail() {
         alert(response);
     });
 }
+
+function missing_list() {
+    var data = {
+        action: 'missing_list'
+    };
+    alert('Synkroniseringen kan ta lång tid beroende på hur många produkters lagesaldo som ska importeras. Ett meddelande visas på denna sida när synkroniseringen är klar.');
+    jQuery.post(ajaxurl, data, function(response) {
+        alert(response);
+    });
+}
+
+function clean_sku() {
+    var data = {
+        action: 'clean_sku'
+    };
+    alert('Ett meddelande visas på denna sida när operationen är klar.');
+    jQuery.post(ajaxurl, data, function(response) {
+        alert(response);
+    });
+}
+
+function sync_all_orders() {
+    var data = {
+        action: 'sync_all_orders'
+    };
+    alert('Synkroniseringen kan ta lång tid beroende på hur många ordrar som ska exporteras. Ett meddelande visas på denna sida när synkroniseringen är klar.');
+
+    jQuery.post(ajaxurl, data, function(response) {
+        alert(response);
+    });
+}

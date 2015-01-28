@@ -9,7 +9,7 @@ Author:            Advanced Wp-Plugs
 Requires at least: 3.8
 Tested up to:      4.0
 Stable tag:        1.0
-Version:           1.42
+Version:           1.45
 
 == Description ==
 
@@ -74,5 +74,9 @@ http://wp-plugs.com/woocommerce-fortnox/
 
 == Changelog ==
 
-= 1.42 =
-* General bugfixes
+= 1.45 =
+* Contact bugfix
+* Fortnox update order bug workaround
+* Missing article in WooCommerce workaround
+* Order coupon handling improved
+* Difference in order totals (compared to Fortnox) shown in admin

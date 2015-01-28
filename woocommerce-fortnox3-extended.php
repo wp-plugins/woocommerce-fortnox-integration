@@ -4,7 +4,7 @@
  * Plugin URI: http://plugins.svn.wordpress.org/woocommerce-fortnox-integration/
  * Description: A Fortnox 3 API Interface. Synchronizes products, orders and more to fortnox.
  * Also fetches inventory from fortnox and updates WooCommerce
- * Version: 1.42
+ * Version: 1.45
  * Author: Advanced WP-Plugs
  * Author URI: http://wp-plugs.com
  * License: GPL2
@@ -130,6 +130,44 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
             die(); // this is required to return a proper result
         }
 
+        add_action( 'wp_ajax_missing_list', 'missing_list_callback' );
+
+        function missing_list_callback() {
+            global $wpdb; // this is how you get access to the database
+            include_once("class-woo-fortnox-controller.php");
+            ob_start();
+            $controller = new WC_Fortnox_Controller();
+            $message = $controller->diff_woo_fortnox_inventory();
+            ob_end_clean();
+            echo $message;
+            die(); // this is required to return a proper result
+        }
+
+        add_action( 'wp_ajax_clean_sku', 'clean_sku_callback' );
+
+        function clean_sku_callback() {
+            global $wpdb; // this is how you get access to the database
+            include_once("class-woo-fortnox-controller.php");
+            //ob_start();
+            $controller = new WC_Fortnox_Controller();
+            $message = $controller->SKU_clean();
+            //ob_end_clean();
+            echo $message;
+            die(); // this is required to return a proper result
+        }
+
+        add_action( 'wp_ajax_sync_all_orders', 'sync_all_orders_callback' );
+
+        function sync_all_orders_callback() {
+
+            global $wpdb; // this is how you get access to the database
+            include_once("class-woo-fortnox-controller.php");
+            $controller = new WC_Fortnox_Controller();
+            $message = $controller->sync_all_orders_to_fortnox();
+            echo $message;
+            die(); // this is required to return a proper result
+        }
+
         /**
          * Localisation
          **/
@@ -143,6 +181,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
             private $support_key = 'woocommerce_fortnox_support';
             private $manual_action_key = 'woocommerce_fortnox_manual_action';
             private $start_action_key = 'woocommerce_fortnox_start_action';
+            private $differences_key = 'woocommerce_fortnox_differences';
             private $general_settings;
             private $accounting_settings;
             private $plugin_options_key = 'woocommerce_fortnox_options';
@@ -167,6 +206,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                 add_action( 'admin_init', array( &$this, 'register_woocommerce_fortnox_order_settings' ));
                 add_action( 'admin_init', array( &$this, 'register_woocommerce_fortnox_manual_action' ));
                 add_action( 'admin_init', array( &$this, 'register_woocommerce_fortnox_support' ));
+                add_action( 'admin_init', array( &$this, 'register_woocommerce_fortnox_order_differences' ));
                 add_action( 'admin_menu', array( &$this, 'add_admin_menus' ) );
                 add_action( 'admin_notices', array( $this, 'admin_notices' ) );
 
@@ -339,7 +379,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                 $options = get_option('woocommerce_fortnox_general_settings');
                 echo '<div class="wrap"><h2>WooCommerce Fortnox Integration</h2><div id="icon-edit" class="icon32"></div></div>';
                 if(!isset($options['api-key']) || $options['api-key'] == ''){
-                    echo "<button type=\"button button-primary\" class=\"button button-primary\" title=\"\" style=\"margin:5px\" onclick=\"window.open('http://whmcs.onlineforce.net/cart.php?a=add&pid=49&billingcycle=mounthly','_blank');\">Hämta API-Nyckel</button>";
+                    echo "<button type=\"button button-primary\" class=\"button button-primary\" title=\"\" style=\"margin:5px\" onclick=\"window.open('http://whmcs.onlineforce.net/cart.php?a=confproduct&i=0','_blank');\">Hämta API-Nyckel</button>";
                 }
 
                 echo '<h2 class="nav-tab-wrapper">';
@@ -372,8 +412,9 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                 add_settings_field( 'woocommerce-fortnox-activate-invoices', 'Skapa faktura för varje order', array( &$this, 'field_option_checkbox' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'activate-invoices', 'desc' => '') );
                 add_settings_field( 'woocommerce-fortnox-activate-bookkeeping', 'Aktivera automatisk bokföring för faktura', array( &$this, 'field_option_checkbox' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'activate-bookkeeping', 'desc' => '') );
                 add_settings_field( 'woocommerce-fortnox-activate-fortnox-products-sync', 'Aktivera lagersaldosynkning från fortnox', array( &$this, 'field_option_checkbox' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'activate-fortnox-products-sync', 'desc' => '') );
-                add_settings_field( 'woocommerce-fortnox-activate-vat', 'Synkronisera inklusive moms', array( &$this, 'field_option_checkbox' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'activate-vat', 'desc' => '') );
+                add_settings_field( 'woocommerce-fortnox-product-price-including-vat', 'Synkronisera produktpriser inklusive moms', array( &$this, 'field_option_checkbox' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'product-price-including-vat', 'desc' => '') );
                 add_settings_field( 'woocommerce-fortnox-sync-master', 'Synkronisera Master-produkten', array( &$this, 'field_option_checkbox' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'sync-master', 'desc' => '') );
+                add_settings_field( 'woocommerce-fortnox-default-pricelist', 'Prislista', array( &$this, 'field_option_text' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'default-pricelist', 'desc' => 'Standard är prislita A om inget anges') );
             }
 
 
@@ -434,6 +475,19 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 
                 $this->plugin_settings_tabs[$this->support_key] = 'Support';
                 register_setting( $this->support_key, $this->support_key );
+            }
+
+            /**
+             * WooCommerce Fortnox Order Differences
+             *
+             * @access public
+             * @param void
+             * @return void
+             */
+            function register_woocommerce_fortnox_order_differences() {
+
+                $this->plugin_settings_tabs[$this->differences_key] = 'Order diff';
+                register_setting( $this->support_key, $this->differences_key );
             }
 
             /**
@@ -571,7 +625,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                                 <button type="button" class="button" title="Manuell Synkning" style="margin:5px" onclick="fetch_contacts()">Manuell synkning kontakter</button>
                                 <p>Hämtar alla kunder från er Fortnox. Detta görs för att undvika dubbletter.</p>
                             </li>
-                            <li class="full">
+                            <li class="full" style="display: none;">
                                 <button type="button" class="button" title="Manuell Synkning Orders" style="margin:5px" onclick="sync_orders()">Manuell synkning ordrar</button>
                                 <p>Synkroniserar alla ordrar som misslyckats att synkronisera.</p>
                             </li>
@@ -582,6 +636,18 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                             <li class="full">
                                 <button type="button" class="button" title="Uppdatera lagersaldo från Fortnox" style="margin:5px" onclick="update_fortnox_inventory()">Uppdatera lagersaldo från Fortnox</button>
                                 <p>Uppdatera lagersaldo från Fortnox. Om ni har många produkter kan det ta ett tag.</p>
+                            </li>
+                            <li class="full" style="display: none;">
+                                <button type="button" class="button" title="Visa diff lista" style="margin:5px" onclick="missing_list()">DiffLista</button>
+                                <p>Visa diff-lista</p>
+                            </li>
+                            <li class="full" style="display: none;">
+                                <button type="button" class="button" title="Visa diff lista" style="margin:5px" onclick="clean_sku()">Rensa SKU-nummer</button>
+                                <p>Rensa SKU-nummer</p>
+                            </li>
+                            <li class="full">
+                                <button type="button" class="button" title="Synkronisera alla ordrar" style="margin:5px" onclick="sync_all_orders()">Synkronisera alla ordrar</button>
+                                <p>Synkronisera alla godkända ordrar</p>
                             </li>
                         </ul>
                     </div>
@@ -646,6 +712,24 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                             	</div>
                             </li>
                         <?php } ?>
+                        </ul>
+                    </div>
+                <?php }
+                else if($tab == $this->differences_key){
+                    global $wpdb;
+                    $differences = $wpdb->get_results("SELECT * FROM wp_postmeta where meta_key = '_fortnox_difference_order'");?>
+                    <div class="wrap">
+                    <?php $this->plugin_options_tabs(); ?>
+                    <ul class="manuella">
+                    <?php
+                    if ( $differences ){
+                        foreach ( $differences as $difference ){?>
+                            <li>
+                                <p>Order ID: <?php echo $difference->post_id; ?> Diff: <?php echo $difference->meta_value; ?></p>
+                            </li>
+                        <?php    }
+                    }
+                    ?>
                         </ul>
                     </div>
                 <?php }
@@ -728,8 +812,6 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                 $controller = new WC_Fortnox_Controller();
                 $controller->send_contact_to_fortnox($orderId);
             }
-
-
 
             /**
              * Sends product to Fortnox API
