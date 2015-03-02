@@ -31,6 +31,7 @@ class WC_Fortnox_Controller {
     private $FORTNOX_ERROR_CODE_PRODUCT_PRICE_EXIST = 2000762;
     private $FORTNOX_ERROR_CODE_ARTICLE_NUMBER_MISSING = 2001846;
     private $FORTNOX_ERROR_CODE_ARTICLE_PRICELIST_ERROR = 2000342;
+    private $FORTNOX_ERROR_CODE_ARTICLE_ALREADY_TAKEN = 2000013;
 
     public function add_api_key_error_notice( $location ) {
         remove_filter( 'redirect_post_location', array( $this, 'add_api_key_error_notice' ), 99 );
@@ -406,9 +407,19 @@ class WC_Fortnox_Controller {
                         $productResponse = $apiInterface->create_product_request($productXml);
 
                         if(array_key_exists('Error', $productResponse)){
-                            add_filter( 'redirect_post_location', array( $this, 'add_product_error_notice' ), 99 );
-                            if(!AUTOMATED_TESTING){
-                                return 0;
+                            if((int)$productResponse['Code'] == $this->FORTNOX_ERROR_CODE_ARTICLE_ALREADY_TAKEN){
+                                $productXml = $productDoc->update($product);
+                                $updateResponse = $apiInterface->update_product_request($productXml, $sku);
+
+                                //update price
+                                $productPriceXml = $productDoc->update_price($product);
+                                $priceResponse = $apiInterface->update_product_price_request($productPriceXml, $sku);
+                            }
+                            else{
+                                add_filter( 'redirect_post_location', array( $this, 'add_product_error_notice' ), 99 );
+                                if(!AUTOMATED_TESTING){
+                                    return 0;
+                                }
                             }
                         }
 

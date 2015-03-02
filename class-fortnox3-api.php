@@ -298,7 +298,7 @@ class WCF_API{
         //Send error to plugapi
         if (array_key_exists("Error", $arrayData)){
             logthis("FORTNOX ERROR");
-            $this->post_error($arrayData['Message']);
+            $this->post_error($url . " " . $arrayData['Message']);
         }
 
         return $arrayData;
@@ -341,7 +341,7 @@ class WCF_API{
         //Send error to plugapi
         if (array_key_exists("Error", $arrayData)){
             logthis("FORTNOX ERROR");
-            $this->post_error($arrayData['Message']);
+            $this->post_error($url . " " . $arrayData['Message']);
         }
 
         return $arrayData;

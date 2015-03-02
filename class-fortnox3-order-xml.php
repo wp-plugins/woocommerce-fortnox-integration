@@ -33,7 +33,6 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
         $order['CurrencyRate'] = '1';
         $order['CurrencyUnit'] = '1';
         $order['YourOrderNumber'] = $arr->id;
-
         $order['CustomerNumber'] = $customerNumber;
         $order['Address1'] = $arr->billing_address_1;
         $order['City'] = $arr->billing_city;
@@ -102,10 +101,9 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
             $invoicerow['Unit'] = 'st';
             $invoicerow['DeliveredQuantity'] = $item['qty'];
             $invoicerow['OrderedQuantity'] = $item['qty'];
-
             $invoicerow['Price'] = $this->get_product_price($item)/$item['qty'];
-
             $invoicerow['VAT'] = $this->get_tax_class_by_tax_name($item['tax_class']);
+
             $index += 1;
             $invoicerows[$key] = $invoicerow;
         }
@@ -122,9 +120,7 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
                 $invoicerow['Unit'] = 'st';
                 $invoicerow['DeliveredQuantity'] = 1;
                 $invoicerow['OrderedQuantity'] = 1;
-
                 $invoicerow['Price'] = -1 * $arr->get_total_discount();
-
                 $invoicerow['VAT'] = 0;
                 $invoicerows[$key] = $invoicerow;
             }

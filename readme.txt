@@ -74,9 +74,5 @@ http://wp-plugs.com/woocommerce-fortnox/
 
 == Changelog ==
 
-= 1.45 =
+= 1.47 =
 * Contact bugfix
-* Fortnox update order bug workaround
-* Missing article in WooCommerce workaround
-* Order coupon handling improved
-* Difference in order totals (compared to Fortnox) shown in admin

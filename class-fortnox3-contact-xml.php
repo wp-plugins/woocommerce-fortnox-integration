@@ -29,7 +29,14 @@ class WCF_Contact_XML_Document extends WCF_XML_Document{
         $contact['DeliveryAddress1'] = $arr->shipping_address_1;
         $contact['DeliveryZipCode'] = $arr->shipping_postcode;
         $contact['DeliveryCity'] = $arr->shipping_city;
-        $contact['PriceList'] = 'A';
+
+        if(!isset($options['default-pricelist'])){
+            $contact['PriceList'] = 'A';
+        }
+        else{
+            $contact['PriceList'] = $options['default-pricelist'];
+        }
+
         $root = 'Customer';
         return $this->generate($root, $contact);
     }
