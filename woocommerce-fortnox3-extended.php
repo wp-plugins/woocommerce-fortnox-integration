@@ -4,7 +4,7 @@
  * Plugin URI: http://plugins.svn.wordpress.org/woocommerce-fortnox-integration/
  * Description: A Fortnox 3 API Interface. Synchronizes products, orders and more to fortnox.
  * Also fetches inventory from fortnox and updates WooCommerce
- * Version: 1.47
+ * Version: 1.48
  * Author: Advanced WP-Plugs
  * Author URI: http://wp-plugs.com
  * License: GPL2
@@ -238,29 +238,30 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
             }
 
             public function admin_notices() {
-                if ( ! isset( $_GET['fortnox_message'] ) ){
+                if ( ! isset( $_GET['fortnox_code'] ) ){
                     return;
                 }
                 $class = "error";
                 $message = "";
-                switch($_GET['fortnox_message']){
+                $link = null;
+                switch($_GET['fortnox_code']){
                     case $this->WCF_API_KEY_ERROR:
                         $message = "WooCommerce Fortnox Integration: Er API-Nyckel är ej giltig.";
                         break;
                     case $this->WCF_FORTNOX_KEY_ERROR:
-                        $message = "WooCommerce Fortnox Integration: Inloggning till Fortnox misslyckades.";
+                        $message = "WooCommerce Fortnox Integration: Inloggning till Fortnox misslyckades. " . $_GET['fortnox_message'];
                         break;
                     case $this->WCF_ORDER_ERROR:
-                        $message = "WooCommerce Fortnox Integration: Synkronisering av order misslyckades.";
+                        $message = "WooCommerce Fortnox Integration: Synkronisering av order misslyckades. " . $_GET['fortnox_message'];
                         break;
                     case $this->WCF_INVOICE_ERROR:
-                        $message = "WooCommerce Fortnox Integration: Lyckades EJ att skapa faktura av ordern.";
+                        $message = "WooCommerce Fortnox Integration: Lyckades EJ att skapa faktura av ordern. " . $_GET['fortnox_message'];
                         break;
                     case $this->WCF_BOOKKEEPING_ERROR:
-                        $message = "WooCommerce Fortnox Integration: Lyckades EJ att bokföra orderns faktura.";
+                        $message = "WooCommerce Fortnox Integration: Lyckades EJ att bokföra orderns faktura. " . $_GET['fortnox_message'];
                         break;
                     case $this->WCF_CONTACT_ERROR:
-                        $message = "WooCommerce Fortnox Integration: Lyckades EJ att skapa kund.";
+                        $message = "WooCommerce Fortnox Integration: Lyckades EJ att skapa kund. " . $_GET['fortnox_message'];
                         break;
                     case $this->WCF_ORDER_SUCCESS:
                         $class = "updated";
@@ -271,13 +272,28 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                         $message = "WooCommerce Fortnox Integration: Produkten har synkroniserats till Fortnox.";
                         break;
                     case $this->WCF_PRODUCT_ERROR:
-                        $message = "WooCommerce Fortnox Integration: Lyckades EJ att synkronisera produkt.";
+                        $message = "WooCommerce Fortnox Integration: Lyckades EJ att synkronisera produkt. " . $_GET['fortnox_message'];
                         break;
+                }
+                if ( $_GET['fortnox_error_code'] ){
+                    include_once("class-woo-fortnox-controller.php");
+                    switch($_GET['fortnox_error_code']){
+                        case WC_Fortnox_Controller::FORTNOX_ERROR_CODE_ACCESS_TOKEN:
+                            $link = 'fortnox-accesstoken-fel';
+                            break;
+                        case WC_Fortnox_Controller::FORTNOX_ERROR_CODE_VALID_IDENTIFIER:
+                            $link .= 'fel-i-kunddatabastabellen';
+                            break;
+
+                    }
                 }
 
                 ?>
                 <div class="<?php echo $class;?>">
                     <p><?php esc_html_e( $message, 'text-domain' ); ?></p>
+                <?php if($link){ ?>
+                    <a href="http://wp-plugs.com/woocommerce-fortnox/<?php echo $link;?>">Se mer info</a>
+                <?php } ?>
                 </div>
             <?php
             }
@@ -382,6 +398,9 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                     echo "<button type=\"button button-primary\" class=\"button button-primary\" title=\"\" style=\"margin:5px\" onclick=\"window.open('http://whmcs.onlineforce.net/cart.php?a=add&pid=49&carttpl=flex-web20cart','_blank');\">Hämta API-Nyckel</button>";
                 }
 
+                if (!function_exists('curl_version')){
+                    echo '<div class="error"><p>PHP cURL saknas. Pluginet kommer EJ att fungera utan det. Kontakta din serveradmin.<a href="http://wp-plugs.com/php-curl-saknas">Se mer info</a></p></div>';
+                }
                 echo '<h2 class="nav-tab-wrapper">';
 
                 foreach ( $this->plugin_settings_tabs as $tab_key => $tab_caption ) {

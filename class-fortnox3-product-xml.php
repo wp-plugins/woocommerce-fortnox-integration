@@ -63,7 +63,12 @@ class WCF_Product_XML_Document extends WCF_XML_Document{
             $price['PriceList'] = 'A';
         }
         else{
-            $price['PriceList'] = $options['default-pricelist'];
+            if($options['default-pricelist'] != ''){
+                $price['PriceList'] = $options['default-pricelist'];
+            }
+            else{
+                $price['PriceList'] = 'A';
+            }
         }
 
         if($options['product-price-including-vat'] == 'on'){
@@ -100,7 +105,12 @@ class WCF_Product_XML_Document extends WCF_XML_Document{
             $price['PriceList'] = 'A';
         }
         else{
-            $price['PriceList'] = $options['default-pricelist'];
+            if($options['default-pricelist'] != ''){
+                $price['PriceList'] = $options['default-pricelist'];
+            }
+            else{
+                $price['PriceList'] = 'A';
+            }
         }
 
         $price['Price'] = $product->get_price_excluding_tax();

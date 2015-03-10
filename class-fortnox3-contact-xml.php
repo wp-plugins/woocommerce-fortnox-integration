@@ -34,7 +34,12 @@ class WCF_Contact_XML_Document extends WCF_XML_Document{
             $contact['PriceList'] = 'A';
         }
         else{
-            $contact['PriceList'] = $options['default-pricelist'];
+            if($options['default-pricelist'] != ''){
+                $contact['PriceList'] = $options['default-pricelist'];
+            }
+            else{
+                $contact['PriceList'] = 'A';
+            }
         }
 
         $root = 'Customer';
