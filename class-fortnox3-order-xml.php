@@ -44,7 +44,8 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
         $order['DeliveryZipCode'] =  $arr->shipping_postcode;
 
         if(isset($arr->billing_company)){
-            $order['CustomerName'] = $arr->billing_first_name . " " . $arr->billing_last_name . " " . $arr->billing_company;
+            $order['CustomerName'] = $arr->billing_company;
+            $order['OurReference'] = $arr->billing_first_name . " " . $arr->billing_last_name;
         }
         else{
             $order['DeliveryName'] = $arr->billing_first_name . " " . $arr->billing_last_name;
@@ -58,9 +59,6 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
         }
 
         $order['VATIncluded'] = 'true';
-
-        $order['AdministrationFee'] = $orderOptions['admin-fee'];
-
 
         if($orderOptions['add-payment-type'] == 'on'){
             $payment_method = get_post_meta( $arr->id, '_payment_method_title');
