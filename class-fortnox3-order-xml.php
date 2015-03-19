@@ -45,7 +45,7 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
 
         if(isset($arr->billing_company)){
             $order['CustomerName'] = $arr->billing_company;
-            $order['OurReference'] = $arr->billing_first_name . " " . $arr->billing_last_name;
+            $order['YourReference'] = $arr->billing_first_name . " " . $arr->billing_last_name;
         }
         else{
             $order['DeliveryName'] = $arr->billing_first_name . " " . $arr->billing_last_name;
