@@ -90,7 +90,7 @@ class WC_Fortnox_Controller {
         }
         else{
             $this->error_notice = 'NO KEY';
-            $this->response_code = $this::WCF_API_KEY_ERROR;
+            $this->response_code = WC_Fortnox_Controller::WCF_API_KEY_ERROR;
             add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice'), 99 );
             return false;
         }
@@ -124,14 +124,14 @@ class WC_Fortnox_Controller {
             //Init API
             $apiInterface = new WCF_API();
             if($apiInterface->has_error){
-                $this->handle_error(array('Message'=> 'NO KEY', 'Code'=>$this::WCF_API_KEY_ERROR), $this::WCF_API_KEY_ERROR);
+                $this->handle_error(array('Message'=> 'NO KEY', 'Code'=>WC_Fortnox_Controller::WCF_API_KEY_ERROR), WC_Fortnox_Controller::WCF_API_KEY_ERROR);
                 return false;
             }
             //create Order XML
             $orderDoc = new WCF_Order_XML_Document();
             $orderXml = $orderDoc->create($order, $customerNumber, false);
             if(!$orderXml){
-                $this->handle_error(array('Message'=> 'Fel på XML', 'Code'=>$this::FORTNOX_ERROR_XML), $this::WCF_ORDER_ERROR);
+                $this->handle_error(array('Message'=> 'Fel på XML', 'Code'=>WC_Fortnox_Controller::FORTNOX_ERROR_XML), WC_Fortnox_Controller::WCF_ORDER_ERROR);
                 if(!AUTOMATED_TESTING){
                     return false;
                 }
@@ -153,10 +153,13 @@ class WC_Fortnox_Controller {
                     $this->check_order_difference($order, $orderResponse);
                     //Handle error
                     if(array_key_exists('Error', $orderResponse)){
-                        $this->handle_error($orderResponse, $this::WCF_ORDER_ERROR);
+                        $this->handle_error($orderResponse, WC_Fortnox_Controller::WCF_ORDER_ERROR);
                         if(!AUTOMATED_TESTING){
                             return false;
                         }
+                    }
+                    else{
+                        $this->set_order_as_synced($orderId);
                     }
 
                     if(AUTOMATED_TESTING){
@@ -183,10 +186,13 @@ class WC_Fortnox_Controller {
                     $this->check_order_difference($order, $orderResponse);
 
                     if(array_key_exists('Error', $orderResponse)){
-                        $this->handle_error($orderResponse, $this::WCF_ORDER_ERROR);
+                        $this->handle_error($orderResponse, WC_Fortnox_Controller::WCF_ORDER_ERROR);
                         if(!AUTOMATED_TESTING){
                             return false;
                         }
+                    }
+                    else{
+                        $this->set_order_as_synced($orderId);
                     }
 
                     if(AUTOMATED_TESTING){
@@ -199,11 +205,14 @@ class WC_Fortnox_Controller {
                     $database = new WCF_Database_Interface();
                     //Save
                     $database->create_unsynced_order($orderId);
-                    $this->handle_error($orderResponse, $this::WCF_ORDER_ERROR);
+                    $this->handle_error($orderResponse, WC_Fortnox_Controller::WCF_ORDER_ERROR);
                     if(!AUTOMATED_TESTING){
                         return false;
                     }
                 }
+            }
+            else{
+                $this->set_order_as_synced($orderId);
             }
             if(!isset($options['activate-invoices'])){
                 if(AUTOMATED_TESTING){
@@ -212,7 +221,8 @@ class WC_Fortnox_Controller {
                         'order_response' => $orderResponse,
                     );
                 };
-                $this->response_code = $this::WCF_ORDER_SUCCESS;
+
+                $this->response_code = WC_Fortnox_Controller::WCF_ORDER_SUCCESS;
                 add_filter( 'redirect_post_location', array( $this, 'add_fortnox_success_notice' ), 99 );
                 return true;
             }
@@ -221,7 +231,7 @@ class WC_Fortnox_Controller {
                 $invoiceResponse = $apiInterface->create_order_invoice_request($orderResponse['DocumentNumber']);
 
                 if(array_key_exists('Error', $invoiceResponse)){
-                    $this->handle_error($invoiceResponse, $this::WCF_INVOICE_ERROR);
+                    $this->handle_error($invoiceResponse, WC_Fortnox_Controller::WCF_INVOICE_ERROR);
                     if(!AUTOMATED_TESTING){
                         return false;
                     }
@@ -233,14 +243,14 @@ class WC_Fortnox_Controller {
                     $bookkeptResponse = $apiInterface->create_invoice_bookkept_request($invoiceResponse['InvoiceReference']);
 
                     if(array_key_exists('Error', $bookkeptResponse)){
-                        $this->handle_error($bookkeptResponse, $this::WCF_BOOKKEEPING_ERROR);
+                        $this->handle_error($bookkeptResponse, WC_Fortnox_Controller::WCF_BOOKKEEPING_ERROR);
                         if(!AUTOMATED_TESTING){
                             return false;
                         }
                     }
                 }
             }
-            $this->response_code = $this::WCF_ORDER_SUCCESS;
+            $this->response_code = WC_Fortnox_Controller::WCF_ORDER_SUCCESS;
             add_filter( 'redirect_post_location', array( $this, 'add_fortnox_success_notice' ), 99 );
         }
         if(AUTOMATED_TESTING){
@@ -249,6 +259,7 @@ class WC_Fortnox_Controller {
                 'order_response' => $orderResponse,
             );
         };
+        $this->set_order_as_synced($orderId);
         return true;
     }
 
@@ -306,7 +317,7 @@ class WC_Fortnox_Controller {
                     $apiInterface = new WCF_API();
 
                     if($apiInterface->has_error){
-                        $this->handle_error(array( 'Message' => 'API-Nyckeln är fel/fattas', 'Code' => 0 ), $this::WCF_API_KEY_ERROR);
+                        $this->handle_error(array( 'Message' => 'API-Nyckeln är fel/fattas', 'Code' => 0 ), WC_Fortnox_Controller::WCF_API_KEY_ERROR);
                         return false;
                     }
 
@@ -342,7 +353,7 @@ class WC_Fortnox_Controller {
                                 $productResponse = $apiInterface->create_product_request($productXml);
 
                                 if(array_key_exists('Error', $productResponse)){
-                                    $this->handle_error($productResponse, $this::WCF_PRODUCT_ERROR);
+                                    $this->handle_error($productResponse, WC_Fortnox_Controller::WCF_PRODUCT_ERROR);
                                     if(!AUTOMATED_TESTING){
                                         return 0;
                                     }
@@ -399,7 +410,7 @@ class WC_Fortnox_Controller {
                                 $priceResponse = $apiInterface->update_product_price_request($productPriceXml, $sku);
                             }
                             else{
-                                $this->handle_error($productResponse, $this::WCF_PRODUCT_ERROR);
+                                $this->handle_error($productResponse, WC_Fortnox_Controller::WCF_PRODUCT_ERROR);
                                 if(!AUTOMATED_TESTING){
                                     return 0;
                                 }
@@ -428,14 +439,14 @@ class WC_Fortnox_Controller {
                             );
                         }
                     }
-                    $this->response_code = $this::WCF_PRODUCT_SUCCESS;
+                    $this->response_code = WC_Fortnox_Controller::WCF_PRODUCT_SUCCESS;
                     add_filter( 'redirect_post_location', array( $this, 'add_fortnox_success_notice' ), 99 );
                 }
             }
         }
         else{
             $this->error_notice = 'NO KEY';
-            $this->response_code = $this::WCF_API_KEY_ERROR;
+            $this->response_code = WC_Fortnox_Controller::WCF_API_KEY_ERROR;
             add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice'), 99 );
         }
     }
@@ -447,6 +458,12 @@ class WC_Fortnox_Controller {
         add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice'), 99 );
     }
 
+    private function set_order_as_synced($order_id){
+        logthis("SET AS SYNCED");
+        $r = update_post_meta($order_id, '_fortnox_order_synced', 1);
+        logthis($r);
+    }
+
     private function handle_pricelist_error($priceResponse, $product, $productDoc, $apiInterface){
         if(array_key_exists('Code', $priceResponse)){
             if((int)$priceResponse['Code'] == $this->FORTNOX_ERROR_CODE_ARTICLE_PRICELIST_ERROR){
@@ -455,10 +472,11 @@ class WC_Fortnox_Controller {
                 return false;
             }
             else{
-                $this->handle_error($priceResponse, $this::WCF_PRODUCT_ERROR);
+                $this->handle_error($priceResponse, WC_Fortnox_Controller::WCF_PRODUCT_ERROR);
                 return false;
             }
         }
+        return true;
     }
 
     /***********************************************************************************************************
@@ -481,14 +499,14 @@ class WC_Fortnox_Controller {
 
         if(!$apiInterface->create_api_validation_request()){
             $this->error_notice = 'NO KEY';
-            $this->response_code = $this::WCF_API_KEY_ERROR;
+            $this->response_code = WC_Fortnox_Controller::WCF_API_KEY_ERROR;
             add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
             return "Er API-Nyckel är ej giltig.";
         }
 
         if($apiInterface->has_error){
             $this->error_notice = 'NO KEY';
-            $this->response_code = $this::WCF_API_KEY_ERROR;
+            $this->response_code = WC_Fortnox_Controller::WCF_API_KEY_ERROR;
             add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
             return "Inloggning till Fortnox misslyckades";
         }
@@ -517,14 +535,14 @@ class WC_Fortnox_Controller {
 
         if(!$apiInterface->create_api_validation_request()){
             $this->error_notice = 'NO KEY';
-            $this->response_code = $this::WCF_API_KEY_ERROR;
+            $this->response_code = WC_Fortnox_Controller::WCF_API_KEY_ERROR;
             add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
             return "Er API-Nyckel är ej giltig.";
         }
 
         if($apiInterface->has_error){
             $this->error_notice = 'NO KEY';
-            $this->response_code = $this::WCF_API_KEY_ERROR;
+            $this->response_code = WC_Fortnox_Controller::WCF_API_KEY_ERROR;
             add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
             return "Inloggning till Fortnox misslyckades";
         }
@@ -567,14 +585,14 @@ class WC_Fortnox_Controller {
 
         if(!$apiInterface->create_api_validation_request()){
             $this->error_notice = 'NO KEY';
-            $this->response_code = $this::WCF_API_KEY_ERROR;
+            $this->response_code = WC_Fortnox_Controller::WCF_API_KEY_ERROR;
             add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
             return "Er API-Nyckel är ej giltig.";
         }
 
         if($apiInterface->has_error){
             $this->error_notice = 'NO KEY';
-            $this->response_code = $this::WCF_API_KEY_ERROR;
+            $this->response_code = WC_Fortnox_Controller::WCF_API_KEY_ERROR;
             add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
             return "Inloggning till Fortnox misslyckades";
         }
@@ -632,14 +650,14 @@ class WC_Fortnox_Controller {
 
         if(!$apiInterface->create_api_validation_request()){
             $this->error_notice = 'NO KEY';
-            $this->response_code = $this::WCF_API_KEY_ERROR;
+            $this->response_code = WC_Fortnox_Controller::WCF_API_KEY_ERROR;
             add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
             return "Er API-Nyckel är ej giltig.";
         }
 
         if($apiInterface->has_error){
             $this->error_notice = 'NO KEY';
-            $this->response_code = $this::WCF_API_KEY_ERROR;
+            $this->response_code = WC_Fortnox_Controller::WCF_API_KEY_ERROR;
             add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
             return "Inloggning till Fortnox misslyckades";
         }
@@ -675,14 +693,14 @@ class WC_Fortnox_Controller {
 
         if(!$apiInterface->create_api_validation_request()){
             $this->error_notice = 'NO KEY';
-            $this->response_code = $this::WCF_API_KEY_ERROR;
+            $this->response_code = WC_Fortnox_Controller::WCF_API_KEY_ERROR;
             add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
             return "Er API-Nyckel är ej giltig.";
         }
 
         if($apiInterface->has_error){
             $this->error_notice = 'NO KEY';
-            $this->response_code = $this::WCF_API_KEY_ERROR;
+            $this->response_code = WC_Fortnox_Controller::WCF_API_KEY_ERROR;
             add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
             return "Inloggning till Fortnox misslyckades";
         }
@@ -734,14 +752,14 @@ class WC_Fortnox_Controller {
 
         if(!$apiInterface->create_api_validation_request()){
             $this->error_notice = 'NO KEY';
-            $this->response_code = $this::WCF_API_KEY_ERROR;
+            $this->response_code = WC_Fortnox_Controller::WCF_API_KEY_ERROR;
             add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
             return false;
         }
 
         if($apiInterface->has_error){
             $this->error_notice = 'NO KEY';
-            $this->response_code = $this::WCF_API_KEY_ERROR;
+            $this->response_code = WC_Fortnox_Controller::WCF_API_KEY_ERROR;
             add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
             return false;
         }
@@ -836,13 +854,13 @@ class WC_Fortnox_Controller {
 
         if(!$apiInterface->create_api_validation_request()){
             $this->error_notice = 'NO KEY';
-            $this->response_code = $this::WCF_API_KEY_ERROR;
+            $this->response_code = WC_Fortnox_Controller::WCF_API_KEY_ERROR;
             add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
         }
 
         if($apiInterface->has_error){
             $this->error_notice = 'NO KEY';
-            $this->response_code = $this::WCF_API_KEY_ERROR;
+            $this->response_code = WC_Fortnox_Controller::WCF_API_KEY_ERROR;
             add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
         }
 
@@ -864,7 +882,7 @@ class WC_Fortnox_Controller {
             $apiInterface = new WCF_API();
             if($apiInterface->has_error){
                 $this->error_notice = 'NO KEY';
-                $this->response_code = $this::WCF_API_KEY_ERROR;
+                $this->response_code = WC_Fortnox_Controller::WCF_API_KEY_ERROR;
                 add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
             }
 
@@ -872,16 +890,16 @@ class WC_Fortnox_Controller {
 
                 $totalAmount = 0;
 
-                foreach($product->get_children() as $childId){
+                foreach($product->get_children() as $child_id){
 
-                    $child = $pf->get_product($childId);
+                    $child = $pf->get_product($child_id);
                     $sku = $child->get_sku();
                     $article = $apiInterface->get_article($sku);
                     if($sku === NULL){
-                        array_push($missing_sku, "VARIANT ID:" .$childId);
+                        array_push($missing_sku, "VARIANT ID:" .$child_id);
                     }
                     if(array_key_exists('Error', $article)){
-                        array_push($missing, "VARIANT ID:" .$childId . " SKU:" .$sku);
+                        array_push($missing, "VARIANT ID:" .$child_id . " SKU:" .$sku);
                     }
                 }
             }
@@ -923,12 +941,12 @@ class WC_Fortnox_Controller {
 
             if($product->has_child()){
 
-                foreach($product->get_children() as $childId){
-                    logthis($childId);
-                    $child = $pf->get_product($childId);
+                foreach($product->get_children() as $child_id){
+                    logthis($child_id);
+                    $child = $pf->get_product($child_id);
                     $sku = $child->get_sku();
                     $sku = $this->clean_str($sku);
-                    update_post_meta($childId, '_sku', $sku);
+                    update_post_meta($child_id, '_sku', $sku);
                     $index++;
                 }
             }
@@ -981,7 +999,7 @@ class WC_Fortnox_Controller {
         $apiInterface = new WCF_API();
         if($apiInterface->has_error){
             $this->error_notice = 'NO KEY';
-            $this->response_code = $this::WCF_API_KEY_ERROR;
+            $this->response_code = WC_Fortnox_Controller::WCF_API_KEY_ERROR;
             add_filter( 'redirect_post_location', array( $this, 'add_fortnox_error_notice' ), 99 );
             return false;
         }
@@ -998,7 +1016,7 @@ class WC_Fortnox_Controller {
             $contactResponse = $apiInterface->create_customer_request($contactXml);
 
             if(array_key_exists('Error', $contactResponse)){
-                $this->handle_error($contactResponse, $this::WCF_CONTACT_ERROR);
+                $this->handle_error($contactResponse, WC_Fortnox_Controller::WCF_CONTACT_ERROR);
                 return null;
             }
 
@@ -1010,7 +1028,7 @@ class WC_Fortnox_Controller {
             $customerNumber = $customer[0]->customer_number;
             $contactResponse = $apiInterface->update_customer_request($contactXml, $customerNumber);
             if(array_key_exists('Error', $contactResponse)){
-                $this->handle_error($contactResponse, $this::WCF_CONTACT_ERROR);
+                $this->handle_error($contactResponse, WC_Fortnox_Controller::WCF_CONTACT_ERROR);
                 return null;
             }
         }
@@ -1028,18 +1046,13 @@ class WC_Fortnox_Controller {
     private function check_order_difference($order, $orderResponse){
         $total = $order->get_total();
 
-        logthis("ORDER DIFF");
         if(array_key_exists('TotalToPay', $orderResponse)){
-            logthis("ORDERINE " . $total . " " . $orderResponse['TotalToPay']);
             if($total != floatval($orderResponse['TotalToPay'])){
-                logthis("NETORDER" .$order->id);
                 update_post_meta($order->id, "_fortnox_difference_order", $total - floatval($orderResponse['TotalToPay']));
             }
             else{
                 delete_post_meta($order->id, "_fortnox_difference_order");
             }
         }
-
-
     }
 }

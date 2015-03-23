@@ -45,7 +45,7 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
 
         if(isset($arr->billing_company)){
             $order['CustomerName'] = $arr->billing_company;
-            $order['OurReference'] = $arr->billing_first_name . " " . $arr->billing_last_name;
+            $order['YourReference'] = $arr->billing_first_name . " " . $arr->billing_last_name;
         }
         else{
             $order['DeliveryName'] = $arr->billing_first_name . " " . $arr->billing_last_name;
@@ -91,7 +91,7 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
 
             //handles missing product
             $invoicerow = array();
-            if(!$product === NULL){
+            if(!is_null($product)){
                 $invoicerow['ArticleNumber'] = $product->get_sku();
             }
 
@@ -108,8 +108,8 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
 
         if($arr->get_total_discount() > 0){
 
-            logthis(print_r($arr->get_used_coupons()[0], true));
-            $coupon = new WC_Coupon($arr->get_used_coupons()[0]);
+            $coupon = $arr->get_used_coupons();
+            $coupon = new WC_Coupon($coupon[0]);
             if(!$coupon->apply_before_tax()){
                 $key = "OrderRow" . $index;
                 $invoicerow = array();
@@ -131,10 +131,24 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
         return $this->generate($root, $order);
     }
 
+    /**
+     * Sums up price and tax from order line
+     *
+     * @access private
+     * @param mixed $product
+     * @return float
+     */
     private function get_product_price($product){
         return floatval($product['line_total'] + $product['line_tax']);
     }
 
+    /**
+     * Returns a products taxrate
+     *
+     * @access public
+     * @param $tax_name
+     * @return int
+     */
     public function get_tax_class_by_tax_name( $tax_name ) {
         global $wpdb;
         if($tax_name == ''){
