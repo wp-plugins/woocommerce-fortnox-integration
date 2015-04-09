@@ -8,8 +8,8 @@ Author URI:        wp-plugs.com
 Author:            Advanced Wp-Plugs
 Requires at least: 3.8
 Tested up to:      4.0
-Stable tag:        1.511	
-Version:           1.511
+Stable tag:        2.0
+Version:           2.0
 
 == Description ==
 
@@ -74,5 +74,8 @@ http://wp-plugs.com/woocommerce-fortnox/
 
 == Changelog ==
 
-= 1.511 =
-* Order bugfix
+= 2.0 =
+* New Order Sync Flow, automatic flow disabled by default
+* New Product Sync Flow, automatic flow disabled
+* Bulk operations
+

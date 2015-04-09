@@ -16,10 +16,9 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
      * @access public
      * @param mixed $arr
      * @param $customerNumber
-     * @param $update
      * @return mixed
      */
-    public function create($arr, $customerNumber, $update){
+    public function create($arr, $customerNumber){
 
         $orderOptions = $options = get_option('woocommerce_fortnox_order_settings');
         $options = get_option('woocommerce_fortnox_general_settings');
@@ -43,22 +42,18 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
         $order['DeliveryCountry'] = $this->countries[$arr->shipping_country];
         $order['DeliveryZipCode'] =  $arr->shipping_postcode;
 
-        if(isset($arr->billing_company)){
+        if(isset($arr->billing_company) && $arr->billing_company != ''){
             $order['CustomerName'] = $arr->billing_company;
             $order['YourReference'] = $arr->billing_first_name . " " . $arr->billing_last_name;
         }
         else{
+            $order['CustomerName'] = $arr->billing_first_name . " " . $arr->billing_last_name;
             $order['DeliveryName'] = $arr->billing_first_name . " " . $arr->billing_last_name;
         }
 
-        if($update){
-            $order['Freight'] = $arr->get_total_shipping() + $arr->get_shipping_tax();
-        }
-        else{
-            $order['Freight'] = $arr->get_total_shipping();
-        }
+        $order['Freight'] = $arr->get_total_shipping();
 
-        $order['VATIncluded'] = 'true';
+        $order['VATIncluded'] = 'false';
 
         if($orderOptions['add-payment-type'] == 'on'){
             $payment_method = get_post_meta( $arr->id, '_payment_method_title');
@@ -91,6 +86,7 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
 
             //handles missing product
             $invoicerow = array();
+
             if(!is_null($product)){
                 $invoicerow['ArticleNumber'] = $product->get_sku();
             }
@@ -139,7 +135,7 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
      * @return float
      */
     private function get_product_price($product){
-        return floatval($product['line_total'] + $product['line_tax']);
+        return floatval($product['line_total']);
     }
 
     /**

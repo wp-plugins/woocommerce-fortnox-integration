@@ -4,7 +4,7 @@
  * Plugin URI: http://plugins.svn.wordpress.org/woocommerce-fortnox-integration/
  * Description: A Fortnox 3 API Interface. Synchronizes products, orders and more to fortnox.
  * Also fetches inventory from fortnox and updates WooCommerce
- * Version: 1.511
+ * Version: 2.0
  * Author: Advanced WP-Plugs
  * Author URI: http://wp-plugs.com
  * License: GPL2
@@ -60,6 +60,18 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
     if ( ! class_exists( 'WCFortnoxExtended' ) ) {
 
 
+        include_once("fortnox3-ajax-callbacks.php");
+
+        add_action( 'wp_ajax_test_connection', 'test_connection_callback' );
+
+        function test_connection_callback() {
+            include_once("class-fortnox3-api.php");
+            $temp = new WCF_API();
+            $temp->create_license_validation_request();
+
+            die(); // this is required to return a proper result
+        }
+
         // in javascript, object properties are accessed as ajax_object.ajax_url, ajax_object.we_value
         function fortnox_enqueue(){
             wp_enqueue_script('jquery');
@@ -68,104 +80,11 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
         }
 
         add_action( 'admin_enqueue_scripts', 'fortnox_enqueue' );
-        add_action( 'wp_ajax_initial_sync_products', 'initial_sync_products_callback' );
 
-        function initial_sync_products_callback() {
-            global $wpdb; // this is how you get access to the database
-            include_once("class-woo-fortnox-controller.php");
-            $controller = new WC_Fortnox_Controller();
-            ob_start();
-            $message = $controller->initial_products_sync();
-            ob_end_clean();
-            echo $message;
-            die(); // this is required to return a proper result
-        }
-
-        add_action( 'wp_ajax_fetch_contacts', 'fetch_contacts_callback' );
-
-        function fetch_contacts_callback() {
-            global $wpdb; // this is how you get access to the database
-            include_once("class-woo-fortnox-controller.php");
-            ob_start();
-            $controller = new WC_Fortnox_Controller();
-            $message = $controller->fetch_fortnox_contacts();
-            ob_end_clean();
-            echo $message;
-
-            die(); // this is required to return a proper result
-        }
-
-        add_action( 'wp_ajax_send_support_mail', 'send_support_mail_callback' );
-
-        function send_support_mail_callback() {
-
-            $message = 'Kontakta ' . $_POST['name'] . ' på ' . $_POST['company'] . ' antingen på ' .$_POST['telephone'] .
-                ' eller ' . $_POST['email'] . ' gällande: \n' . $_POST['subject'];
-            $sent = wp_mail( 'support@wp-plugs.com', 'Fortnox Support', $message);
-            echo $sent;
-            //die(); // this is required to return a proper result
-        }
-
-        add_action( 'wp_ajax_sync_orders', 'sync_orders_callback' );
-
-        function sync_orders_callback() {
-            global $wpdb; // this is how you get access to the database
-            include_once("class-woo-fortnox-controller.php");
-            $controller = new WC_Fortnox_Controller();
-            $message = $controller->sync_orders_to_fortnox();
-            echo $message;
-            die(); // this is required to return a proper result
-        }
-
-        add_action( 'wp_ajax_update_fortnox_inventory', 'update_fortnox_inventory_callback' );
-
-        function update_fortnox_inventory_callback() {
-            global $wpdb; // this is how you get access to the database
-            include_once("class-woo-fortnox-controller.php");
-            ob_start();
-            $controller = new WC_Fortnox_Controller();
-            $message = $controller->run_manual_inventory_cron_job();
-            ob_end_clean();
-            echo $message;
-            die(); // this is required to return a proper result
-        }
-
-        add_action( 'wp_ajax_missing_list', 'missing_list_callback' );
-
-        function missing_list_callback() {
-            global $wpdb; // this is how you get access to the database
-            include_once("class-woo-fortnox-controller.php");
-            ob_start();
-            $controller = new WC_Fortnox_Controller();
-            $message = $controller->diff_woo_fortnox_inventory();
-            ob_end_clean();
-            echo $message;
-            die(); // this is required to return a proper result
-        }
-
-        add_action( 'wp_ajax_clean_sku', 'clean_sku_callback' );
-
-        function clean_sku_callback() {
-            global $wpdb; // this is how you get access to the database
-            include_once("class-woo-fortnox-controller.php");
-            //ob_start();
-            $controller = new WC_Fortnox_Controller();
-            $message = $controller->SKU_clean();
-            //ob_end_clean();
-            echo $message;
-            die(); // this is required to return a proper result
-        }
-
-        add_action( 'wp_ajax_sync_all_orders', 'sync_all_orders_callback' );
-
-        function sync_all_orders_callback() {
-
-            global $wpdb; // this is how you get access to the database
-            include_once("class-woo-fortnox-controller.php");
-            $controller = new WC_Fortnox_Controller();
-            $message = $controller->sync_all_orders_to_fortnox();
-            echo $message;
-            die(); // this is required to return a proper result
+        add_action( 'admin_enqueue_scripts', 'load_fortnox_admin_style' );
+        function load_fortnox_admin_style() {
+            wp_register_style( 'admin_css', plugins_url( '/woocommerce-fortnox-integration/css/admin-style.css'), false, '1.0.0' );
+            wp_enqueue_style( 'admin_css', plugins_url( '/woocommerce-fortnox-integration/css/admin-style.css'), false, '1.0.0' );
         }
 
         /**
@@ -187,16 +106,6 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
             private $plugin_options_key = 'woocommerce_fortnox_options';
             private $plugin_settings_tabs = array();
 
-            public $WCF_API_KEY_ERROR = 1;
-            public $WCF_FORTNOX_KEY_ERROR = 2;
-            public $WCF_ORDER_ERROR = 3;
-            public $WCF_INVOICE_ERROR = 4;
-            public $WCF_BOOKKEEPING_ERROR = 5;
-            public $WCF_CONTACT_ERROR = 6;
-            public $WCF_PRODUCT_ERROR = 7;
-            public $WCF_ORDER_SUCCESS = 8;
-            public $WCF_PRODUCT_SUCCESS = 9;
-
             public function __construct() {
 
                 //call register settings function
@@ -208,14 +117,20 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                 add_action( 'admin_init', array( &$this, 'register_woocommerce_fortnox_support' ));
                 add_action( 'admin_init', array( &$this, 'register_woocommerce_fortnox_order_differences' ));
                 add_action( 'admin_menu', array( &$this, 'add_admin_menus' ) );
-                add_action( 'admin_notices', array( $this, 'admin_notices' ) );
+                add_action( 'add_meta_boxes', array( $this, 'order_meta_box_add'));
+                add_action( 'add_meta_boxes', array( $this, 'product_meta_box_add'));
+                //Order
+                add_filter( 'manage_edit-shop_order_columns',  array( &$this, 'fortnox_order_columns_head'), 20, 1);
+                add_action( 'manage_shop_order_posts_custom_column',  array( &$this, 'fortnox_order_columns_content'), 10, 2);
+                add_action( 'admin_footer-edit.php',  array( &$this, 'synchronize_bulk_admin_footer'));
+                add_action( 'load-edit.php', array( &$this, 'custom_bulk_action'), 10, 1 );
+                //Product
+                add_filter( 'manage_edit-product_columns',  array( &$this, 'fortnox_product_columns_head'), 20, 1);
+                add_action( 'manage_product_posts_custom_column',  array( &$this, 'fortnox_product_columns_content'), 10, 2);
 
-                // Register WooCommerce Hooks
-                if(!AUTOMATED_TESTING)
-                    add_action( 'woocommerce_order_status_completed', array(&$this, 'send_contact_to_fortnox'), 10, 1 );
+                add_action( 'admin_notices', array( &$this, 'display_admin_notice' ) );
 
-                if(!AUTOMATED_TESTING)
-                    add_action( 'save_post', array(&$this, 'send_product_to_fortnox'), 10, 1 );
+                add_action( 'woocommerce_order_status_completed', array(&$this, 'synchronize_order_on_complete'), 10, 1 );
 
                 // install necessary tables
                 register_activation_hook( __FILE__, array(&$this, 'install'));
@@ -227,75 +142,310 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
              ***********************************************************************************************************/
 
             /**
+             * Adds Fortnox Column to listing
+             *
+             * @access public
+             * @param $columns
+             * @return mixed
+             */
+            public function display_admin_notice() {
+
+                $html = '<div id="ajax-fortnox-notification" class="updated" style="display: none">';
+                $html .= '<p id="ajax-fortnox-message">';
+                $html .= '</p>';
+                $html .= '</div><!-- /.updated -->';
+
+                echo $html;
+
+            } // end display_admin_notice
+
+            /**
+             * Performs Fortnox Sync For bulk
+             *
+             * @access public
+             * @return mixed
+             */
+            function custom_bulk_action() {
+
+                // ...
+                logthis("BULK");
+                // 1. get the action
+                $wp_list_table = _get_list_table('WP_Posts_List_Table');
+                $action = $wp_list_table->current_action();
+
+                logthis($action);
+                if(!($action == 'bulk_order_fortnox_synchronize' || $action == 'bulk_product_fortnox_synchronize')){
+                    return;
+                }
+
+                include_once("class-woo-fortnox-controller.php");
+                $controller = new WC_Fortnox_Controller();
+                $post_ids = array_map( 'absint', (array) $_REQUEST['post'] );
+                $changed = 0;
+
+                switch($action){
+                    case 'bulk_order_fortnox_synchronize':
+                        foreach( $post_ids as $post_id ) {
+                            $ret = $controller->send_contact_to_fortnox($post_id);
+                            logthis(print_r($ret, true));
+                            if(!$ret['success']){
+                                wp_die( __('Fel vid synkronisering av order ' . $post_id . ' ' . $ret['message']) );
+                            }
+                            $changed++;
+                        }
+                        $report_action = 'bulk_order_fortnox_synchronize';
+                        $post_type = 'shop_order';
+                        break;
+                    case 'bulk_product_fortnox_synchronize':
+                        logthis("PRDO");
+                        foreach( $post_ids as $post_id ) {
+                            $ret = $controller->send_product_to_fortnox($post_id);
+                            logthis(print_r($ret, true));
+                            if(!$ret['success']){
+                                wp_die( __('Fel vid synkronisering av produkt ' . $post_id . ' ' . $ret['message']) );
+                            }
+                            $changed++;
+                        }
+                        $report_action = 'bulk_product_fortnox_synchronize';
+                        $post_type = 'product';
+                        break;
+
+                }
+                
+                $sendback = add_query_arg( array( 'post_type' => $post_type, $report_action => true, 'changed' => $changed, 'ids' => join( ',', $post_ids ) ), '' );
+                wp_redirect( $sendback );
+
+                exit();
+            }
+
+            /**
+             * Adds Fortnox Column to listing
+             *
+             * @access public
+             * @param $columns
+             * @return mixed
+             */
+            function synchronize_bulk_admin_footer() {
+
+                global $post_type;
+
+                if($post_type == 'shop_order') {
+                    ?>
+                    <script type="text/javascript">
+                        jQuery(document).ready(function() {
+                            jQuery('<option>').val('bulk_order_fortnox_synchronize').text('<?php _e('Synkronisera till Fortnox')?>').appendTo("select[name='action']");
+                        });
+                    </script>
+                <?php
+                }
+                else if($post_type == 'product') {
+                    ?>
+                    <script type="text/javascript">
+                        jQuery(document).ready(function() {
+                            jQuery('<option>').val('bulk_product_fortnox_synchronize').text('<?php _e('Synkronisera till Fortnox')?>').appendTo("select[name='action']");
+                        });
+                    </script>
+                <?php
+                }
+            }
+
+            /**
+             * Adds Fortnox Column to listing
+             *
+             * @access public
+             * @param $columns
+             * @return mixed
+             */
+            public function fortnox_order_columns_head($columns){
+                $new_columns = (is_array($columns)) ? $columns : array();
+                //all of your columns will be added before the actions column
+                $new_columns['fortnox_order_synchronized'] = '<span class="center">Fortnox</span>';
+                $new_columns['fortnox_synchronize'] = '<span class="center">Synkronisera</span>';
+                //stop editing
+
+                $new_columns['order_actions'] = $columns['order_actions'];
+                return $new_columns;
+            }
+
+            /**
+             * Renders image for Fortnox status
+             *
+             * @access public
+             * @param $column_name
+             * @param $post_id
+             * @return void
+             */
+            public function fortnox_order_columns_content($column_name, $post_id) {
+                if ($column_name == 'fortnox_order_synchronized') {
+                    $synced = get_post_meta($post_id, '_fortnox_order_synced', true);
+                    if($synced == 1){ ?>
+                        <mark class="fortnox-status completed" title="Order har synkroniserats"></mark>
+                    <?php }
+                    else { ?>
+                        <mark class="fortnox-status not-completed" title="Order har EJ synkroniserats"></mark>
+                    <?php }
+                }
+                elseif($column_name == 'fortnox_synchronize'){
+                    $ajax_nonce = wp_create_nonce( "fortnox_woocommerce" );?>
+                    <button type="button" class="button" title="Exportera" style="margin:5px" onclick="sync_order(<?php echo $post_id;?>, '<?php echo $ajax_nonce;?>')">></button>
+
+                <?php
+
+                }
+            }
+
+            /**
+             * Adds metabox content to product
+             *
+             * @access public
+             * @param void
+             * @return void
+             */
+            public function fortnox_order_meta_box_cb(){
+                global $post;
+
+                // Get the location data if its already been entered
+                $synced = get_post_meta($post->ID, '_fortnox_order_synced', true);
+                if($synced == 1){
+                    echo "Order har synkroniserats";
+                }
+                else{
+                    echo "Order har EJ synkroniserats";
+                }
+            }
+
+            /**
+             * Adds meta box to product
+             *
+             * @access public
+             * @param void
+             * @return void
+             */
+            public function order_meta_box_add(){
+                add_meta_box( 'fortnox-order-meta-box-id', 'Fortnox', array( $this, 'fortnox_order_meta_box_cb'), 'shop_order', 'normal', 'high' );
+            }
+
+            /**
+             * Adds Fortnox Column to listing
+             *
+             * @access public
+             * @param $columns
+             * @return void
+             */
+            public function fortnox_product_columns_head($columns){
+                $new_columns = (is_array($columns)) ? $columns : array();
+                //unset( $new_columns['order_actions'] );
+                logthis(print_r($columns,true));
+
+                $new_columns['fortnox_product_synchronized'] = '<span class="center">Fortnox</span>';
+                $new_columns['fortnox_synchronize'] = '<span class="center">Synkronisera</span>';
+                //stop editing
+
+                return $new_columns;
+            }
+
+            /**
+             * Renders image for Fortnox status
+             *
+             * @access public
+             * @param $column_name
+             * @param $post_id
+             * @return void
+             */
+            public function fortnox_product_columns_content($column_name, $post_id) {
+                if ($column_name == 'fortnox_product_synchronized') {
+                    $synced = $synced = $this->is_product_synced($post_id);
+                    if($synced == 1){ ?>
+                        <mark class="fortnox-status completed" title="Produkt har synkroniserats"></mark>
+                        <?php }
+                         else { ?>
+                        <mark class="fortnox-status not-completed" title="Produkt har EJ synkroniserats"></mark>
+                    <?php }
+                }
+                elseif($column_name == 'fortnox_synchronize'){
+                    $ajax_nonce = wp_create_nonce( "fortnox_woocommerce" );?>
+                    <button type="button" class="button" title="Exportera" style="margin:5px" onclick="sync_product(<?php echo $post_id;?>, '<?php echo $ajax_nonce;?>')">></button>
+
+                <?php }
+            }
+
+            /**
+             * Adds metabox content to product
+             *
+             * @access public
+             * @param void
+             * @return void
+             */
+            public function fortnox_product_meta_box_cb(){
+                global $post;
+
+                // Get the location data if its already been entered
+                $synced = $this->is_product_synced($post->ID);
+                if($synced){
+                    echo "Produkt har synkroniserats";
+                }
+                else{
+                    echo "Produkt har EJ synkroniserats";
+                }
+            }
+
+            /**
+             * Adds meta box to product
+             *
+             * @access private
+             * @param $product_id
+             * @return bool
+             */
+
+            private function is_product_synced($product_id){
+                $synced = get_post_meta($product_id, '_is_synced_to_fortnox', true);
+
+                $pf = new WC_Product_Factory();
+                $product = $pf->get_product($product_id);
+                if($product->has_child()){
+                    //sync children
+                    $num = count($product->get_children());
+                    $counter = 0;
+                    foreach($product->get_children() as $child_id){
+                        $synced = get_post_meta($child_id, '_is_synced_to_fortnox', true);
+                        if($synced == 1){
+                            $counter++;
+                        }
+                    }
+                    if($counter == $num){
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                else if($synced == 1){
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+
+            /**
+             * Adds meta box to product
+             *
+             * @access public
+             * @param void
+             * @return void
+             */
+            public function product_meta_box_add(){
+                add_meta_box( 'fortnox-product-meta-box-id', 'Fortnox', array( $this, 'fortnox_product_meta_box_cb'), 'product', 'normal', 'high' );
+            }
+            /**
              * Adds admin menu
              *
              * @access public
              * @param void
              * @return void
              */
-            function add_admin_menus() {
+            public function add_admin_menus() {
                 add_options_page( 'WooCommerce Fortnox Integration', 'WooCommerce Fortnox Integration', 'manage_options', $this->plugin_options_key, array( &$this, 'woocommerce_fortnox_options_page' ) );
-            }
-
-            public function admin_notices() {
-                if ( ! isset( $_GET['fortnox_code'] ) ){
-                    return;
-                }
-                $class = "error";
-                $message = "";
-                $link = null;
-                switch($_GET['fortnox_code']){
-                    case $this->WCF_API_KEY_ERROR:
-                        $message = "WooCommerce Fortnox Integration: Er API-Nyckel är ej giltig.";
-                        break;
-                    case $this->WCF_FORTNOX_KEY_ERROR:
-                        $message = "WooCommerce Fortnox Integration: Inloggning till Fortnox misslyckades. " . $_GET['fortnox_message'];
-                        break;
-                    case $this->WCF_ORDER_ERROR:
-                        $message = "WooCommerce Fortnox Integration: Synkronisering av order misslyckades. " . $_GET['fortnox_message'];
-                        break;
-                    case $this->WCF_INVOICE_ERROR:
-                        $message = "WooCommerce Fortnox Integration: Lyckades EJ att skapa faktura av ordern. " . $_GET['fortnox_message'];
-                        break;
-                    case $this->WCF_BOOKKEEPING_ERROR:
-                        $message = "WooCommerce Fortnox Integration: Lyckades EJ att bokföra orderns faktura. " . $_GET['fortnox_message'];
-                        break;
-                    case $this->WCF_CONTACT_ERROR:
-                        $message = "WooCommerce Fortnox Integration: Lyckades EJ att skapa kund. " . $_GET['fortnox_message'];
-                        break;
-                    case $this->WCF_ORDER_SUCCESS:
-                        $class = "updated";
-                        $message = "WooCommerce Fortnox Integration: Ordern har synkroniserats till Fortnox.";
-                        break;
-                    case $this->WCF_PRODUCT_SUCCESS:
-                        $class = "updated";
-                        $message = "WooCommerce Fortnox Integration: Produkten har synkroniserats till Fortnox.";
-                        break;
-                    case $this->WCF_PRODUCT_ERROR:
-                        $message = "WooCommerce Fortnox Integration: Lyckades EJ att synkronisera produkt. " . $_GET['fortnox_message'];
-                        break;
-                }
-                if ( $_GET['fortnox_error_code'] ){
-                    include_once("class-woo-fortnox-controller.php");
-                    switch($_GET['fortnox_error_code']){
-                        case WC_Fortnox_Controller::FORTNOX_ERROR_CODE_ACCESS_TOKEN:
-                            $link = 'fortnox-accesstoken-fel';
-                            break;
-                        case WC_Fortnox_Controller::FORTNOX_ERROR_CODE_VALID_IDENTIFIER:
-                            $link .= 'fel-i-kunddatabastabellen';
-                            break;
-
-                    }
-                }
-
-                ?>
-                <div class="<?php echo $class;?>">
-                    <p><?php esc_html_e( $message, 'text-domain' ); ?></p>
-                <?php if($link){ ?>
-                    <a href="http://wp-plugs.com/woocommerce-fortnox/<?php echo $link;?>">Se mer info</a>
-                <?php } ?>
-                </div>
-            <?php
             }
 
             /**
@@ -337,6 +487,25 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
              * @return void
              */
             function field_option_text($args) {
+                $options = get_option($args['tab_key']);
+                $val = '';
+                if(isset($options[$args['key']] )){
+                    $val = esc_attr( $options[$args['key']] );
+                }
+                ?>
+                <input type="text" name="<?php echo $args['tab_key']; ?>[<?php echo $args['key']; ?>]" value="<?php echo $val; ?>" />
+                <span><i><?php echo $args['desc']; ?></i></span>
+            <?php
+            }
+
+            /**
+             * Generates html for textfield for given settings params
+             *
+             * @access public
+             * @param void
+             * @return void
+             */
+            function field_hidden_option_text($args) {
                 $options = get_option($args['tab_key']);
                 $val = '';
                 if(isset($options[$args['key']] )){
@@ -424,15 +593,15 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 
                 register_setting( $this->general_settings_key, $this->general_settings_key );
                 add_settings_section( 'section_general', 'Allmänna inställningar', array( &$this, 'section_general_desc' ), $this->general_settings_key );
-                add_settings_field( 'woocommerce-fortnox-api-key', 'API Nyckel', array( &$this, 'field_option_text' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'api-key', 'desc' => 'Här anges API-nyckeln du har erhållit från oss via mail. <a target="_blank" href="http://vimeo.com/107836260#t=0m50s">Videoinstruktion</a>') );
+                add_settings_field( 'woocommerce-fortnox-api-key', 'API Nyckel', array( &$this, 'field_hidden_option_text' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'api-key', 'desc' => '') );
                 add_settings_field( 'woocommerce-fortnox-authorization-code', 'Fortnox API-kod', array( &$this, 'field_option_text' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'authorization_code', 'desc' => 'Här anges din API kod från Fortnox. <a target="_blank" href="http://vimeo.com/107836260#t=1m20s">Videoinstruktion</a>') );
-                add_settings_field( 'woocommerce-fortnox-activate-orders', 'Aktivera synkning ordrar', array( &$this, 'field_option_checkbox'), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'activate-orders', 'desc' => ''));
-                add_settings_field( 'woocommerce-fortnox-activate-prices', 'Aktivera synkning produkter', array( &$this, 'field_option_checkbox' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'activate-prices', 'desc' => 'Om du ska synkronisera variabla produkter är det VIKTIGT att ni läser avsnittet "<b>Hur fungerar synkronisering av variabla produkter?</b>" innan! <a target="_blank" href="http://wp-plugs.com/woocommerce-fortnox/#faq">Läs här</a>') );
+                add_settings_field( 'woocommerce-fortnox-activate-automatic-orders', 'Aktivera automatisk synkning av ordrar', array( &$this, 'field_option_checkbox'), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'activate-automatic-orders', 'desc' => ''));
                 add_settings_field( 'woocommerce-fortnox-activate-invoices', 'Skapa faktura för varje order', array( &$this, 'field_option_checkbox' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'activate-invoices', 'desc' => '') );
                 add_settings_field( 'woocommerce-fortnox-activate-bookkeeping', 'Aktivera automatisk bokföring för faktura', array( &$this, 'field_option_checkbox' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'activate-bookkeeping', 'desc' => '') );
                 add_settings_field( 'woocommerce-fortnox-activate-fortnox-products-sync', 'Aktivera lagersaldosynkning från fortnox', array( &$this, 'field_option_checkbox' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'activate-fortnox-products-sync', 'desc' => '') );
                 add_settings_field( 'woocommerce-fortnox-product-price-including-vat', 'Synkronisera produktpriser inklusive moms', array( &$this, 'field_option_checkbox' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'product-price-including-vat', 'desc' => '') );
                 add_settings_field( 'woocommerce-fortnox-sync-master', 'Synkronisera Master-produkten', array( &$this, 'field_option_checkbox' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'sync-master', 'desc' => '') );
+                add_settings_field( 'woocommerce-fortnox-do-not-sync-children', 'Synkronisera EJ variationer', array( &$this, 'field_option_checkbox' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'do-not-sync-children', 'desc' => '') );
                 add_settings_field( 'woocommerce-fortnox-default-pricelist', 'Prislista', array( &$this, 'field_option_text' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'default-pricelist', 'desc' => 'Standard är prislita A om inget anges') );
             }
 
@@ -636,37 +805,42 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                         </form>
                     </div>
                 <?php }
-                else if($tab == $this->manual_action_key){ ?>
+                else if($tab == $this->manual_action_key){
+                    $ajax_nonce = wp_create_nonce( "fortnox_woocommerce" );?>
                     <div class="wrap">
                         <?php $this->plugin_options_tabs(); ?>
                         <ul class="manuella">
                             <li class="full">
-                                <button type="button" class="button" title="Manuell Synkning" style="margin:5px" onclick="fetch_contacts()">Manuell synkning kontakter</button>
+                                <button type="button" class="button" title="Manuell Synkning" style="margin:5px" onclick="fetch_contacts('<?php echo $ajax_nonce;?>')">Manuell synkning kontakter</button>
                                 <p>Hämtar alla kunder från er Fortnox. Detta görs för att undvika dubbletter.</p>
                             </li>
                             <li class="full" style="display: none;">
-                                <button type="button" class="button" title="Manuell Synkning Orders" style="margin:5px" onclick="sync_orders()">Manuell synkning ordrar</button>
+                                <button type="button" class="button" title="Manuell Synkning Orders" style="margin:5px" onclick="sync_orders('<?php echo $ajax_nonce;?>')">Manuell synkning ordrar</button>
                                 <p>Synkroniserar alla ordrar som misslyckats att synkronisera.</p>
                             </li>
                             <li class="full">
-                                <button type="button" class="button" title="Manuell Synkning Produkter" style="margin:5px" onclick="initial_sync_products()">Manuell synkning produkter</button>
+                                <button type="button" class="button" title="Manuell Synkning Produkter" style="margin:5px" onclick="manual_sync_products('<?php echo $ajax_nonce;?>')">Manuell synkning produkter</button>
                                 <p>Skicka alla produkter till er Fortnox. Om ni har många produkter kan det ta ett tag.</p>
                             </li>
                             <li class="full">
-                                <button type="button" class="button" title="Uppdatera lagersaldo från Fortnox" style="margin:5px" onclick="update_fortnox_inventory()">Uppdatera lagersaldo från Fortnox</button>
+                                <button type="button" class="button" title="Uppdatera lagersaldo från Fortnox" style="margin:5px" onclick="update_fortnox_inventory('<?php echo $ajax_nonce;?>')">Uppdatera lagersaldo från Fortnox</button>
                                 <p>Uppdatera lagersaldo från Fortnox. Om ni har många produkter kan det ta ett tag.</p>
                             </li>
                             <li class="full" style="display: none;">
-                                <button type="button" class="button" title="Visa diff lista" style="margin:5px" onclick="missing_list()">DiffLista</button>
+                                <button type="button" class="button" title="Visa diff lista" style="margin:5px" onclick="missing_list('<?php echo $ajax_nonce;?>')">DiffLista</button>
                                 <p>Visa diff-lista</p>
                             </li>
                             <li class="full" style="display: none;">
-                                <button type="button" class="button" title="Visa diff lista" style="margin:5px" onclick="clean_sku()">Rensa SKU-nummer</button>
+                                <button type="button" class="button" title="Visa diff lista" style="margin:5px" onclick="clean_sku('<?php echo $ajax_nonce;?>')">Rensa SKU-nummer</button>
                                 <p>Rensa SKU-nummer</p>
                             </li>
                             <li class="full">
-                                <button type="button" class="button" title="Synkronisera alla ordrar" style="margin:5px" onclick="sync_all_orders()">Synkronisera alla ordrar</button>
+                                <button type="button" class="button" title="Synkronisera alla ordrar" style="margin:5px" onclick="sync_all_orders('<?php echo $ajax_nonce;?>')">Synkronisera alla ordrar</button>
                                 <p>Synkronisera alla godkända ordrar</p>
+                            </li>
+                            <li class="full">
+                                <button type="button" class="button" title="Test connection" style="margin:5px" onclick="test_connection('<?php echo $ajax_nonce;?>')">Test connection</button>
+                                <button type="button" class="button" title="Test connection" style="margin:5px" onclick="test_connection('<?php echo $ajax_nonce;?>')">Test connection</button>
                             </li>
                         </ul>
                     </div>
@@ -826,8 +1000,13 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
              * @access public
              * @param int $orderId
              */
-            public function send_contact_to_fortnox($orderId) {
+            public function synchronize_order_on_complete($orderId) {
                 include_once("class-woo-fortnox-controller.php");
+
+                $options = get_option('woocommerce_fortnox_general_settings');
+                if(!isset($options['activate-automatic-orders'])){
+                    return;
+                }
                 $controller = new WC_Fortnox_Controller();
                 $controller->send_contact_to_fortnox($orderId);
             }
