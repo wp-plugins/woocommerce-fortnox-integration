@@ -25,6 +25,42 @@ function manual_sync_products_callback() {
     die(); // this is required to return a proper result
 }
 
+add_action( 'wp_ajax_manual_diff_sync_orders', 'wp_ajax_manual_diff_sync_orders_callback' );
+
+function wp_ajax_manual_diff_sync_orders_callback() {
+    global $wpdb; // this is how you get access to the database
+
+    check_ajax_referer( 'fortnox_woocommerce', 'security' );
+    ob_start();
+    $args = array(
+        'post_type' => 'shop_order',
+        'orderby' => 'id',
+        'post_status' => 'wc-completed',
+        'posts_per_page' => -1,
+        'meta_query' => array(
+            'relation' => 'OR',
+            array(
+                'key'     => '_fortnox_difference_order',
+                'value' => '1',
+                'type' => 'numeric',
+                'compare' => '>='
+            ),
+            array(
+                'key'     => '_fortnox_difference_order',
+                'value' => '-1',
+                'type' => 'numeric',
+                'compare' => '<='
+            ),
+        ),
+    );
+
+    $the_query = new WP_Query( $args );
+    $post_ids = wp_list_pluck( $the_query->posts, 'ID' );
+    ob_end_clean();
+    echo json_encode($post_ids);
+    die(); // this is required to return a proper result
+}
+
 add_action( 'wp_ajax_fetch_contacts', 'fetch_contacts_callback' );
 
 function fetch_contacts_callback() {
@@ -149,5 +185,14 @@ function sync_product_callback() {
     $controller = new WC_Fortnox_Controller();
     $message = $controller->send_product_to_fortnox($_POST['product_id']);
     echo json_encode($message);
+    die(); // this is required to return a proper result
+}
+
+add_action( 'wp_ajax_set_product_as_unsynced', 'set_product_as_unsynced_callback' );
+
+function set_product_as_unsynced_callback() {
+
+    global $wpdb; // this is how you get access to the database
+    delete_post_meta($_POST['product_id'], '_is_synced_to_fortnox');
     die(); // this is required to return a proper result
 }

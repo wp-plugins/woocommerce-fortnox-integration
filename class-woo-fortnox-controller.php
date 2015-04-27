@@ -401,7 +401,7 @@ class WC_Fortnox_Controller {
 
     private function handle_pricelist_error($priceResponse, $product, $productDoc, $apiInterface){
         if(array_key_exists('Code', $priceResponse)){
-            if((int)$priceResponse['Code'] == $this->FORTNOX_ERROR_CODE_ARTICLE_PRICELIST_ERROR){
+            if((int)$priceResponse['Code'] == WC_Fortnox_Controller::FORTNOX_ERROR_CODE_ARTICLE_PRICELIST_ERROR){
                 $productPriceXml = $productDoc->create_price($product);
                 $apiInterface->create_product_price_request($productPriceXml);
                 return true;

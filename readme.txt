@@ -7,9 +7,9 @@ Tags:              WooCommerce, Order, E-Commerce, Accounting, sync, Fortnox, Cu
 Author URI:        wp-plugs.com
 Author:            Advanced Wp-Plugs
 Requires at least: 3.8
-Tested up to:      4.0
-Stable tag:        2.0
-Version:           2.0
+Tested up to:      4.2
+Stable tag:        2.01
+Version:           2.01
 
 == Description ==
 
@@ -74,8 +74,6 @@ http://wp-plugs.com/woocommerce-fortnox/
 
 == Changelog ==
 
-= 2.0 =
-* New Order Sync Flow, automatic flow disabled by default
-* New Product Sync Flow, automatic flow disabled
-* Bulk operations
+= 2.01 =
+* Bugfixes
 

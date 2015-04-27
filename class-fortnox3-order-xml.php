@@ -87,7 +87,7 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
             //handles missing product
             $invoicerow = array();
 
-            if(!is_null($product)){
+            if(!($product==NULL)){//!is_null($product)
                 $invoicerow['ArticleNumber'] = $product->get_sku();
             }
 
@@ -97,6 +97,21 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
             $invoicerow['OrderedQuantity'] = $item['qty'];
             $invoicerow['Price'] = $this->get_product_price($item)/$item['qty'];
             $invoicerow['VAT'] = $this->get_tax_class_by_tax_name($item['tax_class']);
+
+            $index += 1;
+            $invoicerows[$key] = $invoicerow;
+        }
+
+        /****HANDLE FEES*****/
+        foreach($arr->get_fees() as $item){
+            $key = "OrderRow" . $index;
+
+            $invoicerow['Description'] = $item['name'];
+            $invoicerow['Unit'] = 'st';
+            $invoicerow['DeliveredQuantity'] = 1;
+            $invoicerow['OrderedQuantity'] = 1;
+            $invoicerow['Price'] = $item['line_total'];
+            $invoicerow['VAT'] = 25;
 
             $index += 1;
             $invoicerows[$key] = $invoicerow;
@@ -150,7 +165,8 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
         if($tax_name == ''){
             return 25;
         }
-        $tax_rate = $wpdb->get_var( $wpdb->prepare( "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_name = %d", $tax_name ) );
+        $tax_rate = $wpdb->get_var( $wpdb->prepare( "SELECT tax_rate FROM {$wpdb->prefix}woocommerce_tax_rates WHERE tax_rate_class = %s", $tax_name ) );
+        
         return intval($tax_rate);
     }
 }

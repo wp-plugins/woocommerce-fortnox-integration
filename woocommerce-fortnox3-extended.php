@@ -4,7 +4,7 @@
  * Plugin URI: http://plugins.svn.wordpress.org/woocommerce-fortnox-integration/
  * Description: A Fortnox 3 API Interface. Synchronizes products, orders and more to fortnox.
  * Also fetches inventory from fortnox and updates WooCommerce
- * Version: 2.0
+ * Version: 2.01
  * Author: Advanced WP-Plugs
  * Author URI: http://wp-plugs.com
  * License: GPL2
@@ -276,22 +276,20 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
              * @return void
              */
             public function fortnox_order_columns_content($column_name, $post_id) {
+                $ajax_nonce = wp_create_nonce( "fortnox_woocommerce" );
                 if ($column_name == 'fortnox_order_synchronized') {
                     $synced = get_post_meta($post_id, '_fortnox_order_synced', true);
                     if($synced == 1){ ?>
                         <mark class="fortnox-status completed" title="Order har synkroniserats"></mark>
                     <?php }
                     else { ?>
-                        <mark class="fortnox-status not-completed" title="Order har EJ synkroniserats"></mark>
+                        <mark class="fortnox-status not-completed" title="Order har EJ synkroniserats" ></mark>
                     <?php }
                 }
-                elseif($column_name == 'fortnox_synchronize'){
-                    $ajax_nonce = wp_create_nonce( "fortnox_woocommerce" );?>
+                elseif($column_name == 'fortnox_synchronize'){?>
                     <button type="button" class="button" title="Exportera" style="margin:5px" onclick="sync_order(<?php echo $post_id;?>, '<?php echo $ajax_nonce;?>')">></button>
+                <?php }
 
-                <?php
-
-                }
             }
 
             /**
@@ -353,17 +351,17 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
              * @return void
              */
             public function fortnox_product_columns_content($column_name, $post_id) {
+                $ajax_nonce = wp_create_nonce( "fortnox_woocommerce" );
                 if ($column_name == 'fortnox_product_synchronized') {
                     $synced = $synced = $this->is_product_synced($post_id);
                     if($synced == 1){ ?>
-                        <mark class="fortnox-status completed" title="Produkt har synkroniserats"></mark>
+                        <mark class="fortnox-status completed" title="Produkt har synkroniserats" onclick="set_product_as_unsynced(<?php echo $post_id;?>, '<?php echo $ajax_nonce;?>')"></mark>
                         <?php }
                          else { ?>
                         <mark class="fortnox-status not-completed" title="Produkt har EJ synkroniserats"></mark>
                     <?php }
                 }
-                elseif($column_name == 'fortnox_synchronize'){
-                    $ajax_nonce = wp_create_nonce( "fortnox_woocommerce" );?>
+                elseif($column_name == 'fortnox_synchronize'){?>
                     <button type="button" class="button" title="Exportera" style="margin:5px" onclick="sync_product(<?php echo $post_id;?>, '<?php echo $ajax_nonce;?>')">></button>
 
                 <?php }
@@ -815,7 +813,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                                 <p>Hämtar alla kunder från er Fortnox. Detta görs för att undvika dubbletter.</p>
                             </li>
                             <li class="full" style="display: none;">
-                                <button type="button" class="button" title="Manuell Synkning Orders" style="margin:5px" onclick="sync_orders('<?php echo $ajax_nonce;?>')">Manuell synkning ordrar</button>
+                                <button type="button" class="button" title="Manuell Synkning Orders" style="margin:5px" onclick="sync_all_orders('<?php echo $ajax_nonce;?>')">Manuell synkning ordrar</button>
                                 <p>Synkroniserar alla ordrar som misslyckats att synkronisera.</p>
                             </li>
                             <li class="full">
@@ -835,12 +833,12 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                                 <p>Rensa SKU-nummer</p>
                             </li>
                             <li class="full">
-                                <button type="button" class="button" title="Synkronisera alla ordrar" style="margin:5px" onclick="sync_all_orders('<?php echo $ajax_nonce;?>')">Synkronisera alla ordrar</button>
-                                <p>Synkronisera alla godkända ordrar</p>
+                                <button type="button" class="button" title="Synkronisera differensordrar " style="margin:5px" onclick="manual_diff_sync_orders('<?php echo $ajax_nonce;?>')">Synkronisera differensordrar</button>
+                                <p>Synkronisera ordrar, vars total har en differens mot FortNox</p>
                             </li>
                             <li class="full">
-                                <button type="button" class="button" title="Test connection" style="margin:5px" onclick="test_connection('<?php echo $ajax_nonce;?>')">Test connection</button>
-                                <button type="button" class="button" title="Test connection" style="margin:5px" onclick="test_connection('<?php echo $ajax_nonce;?>')">Test connection</button>
+                                <button type="button" class="button" title="Synkronisera alla ordrar" style="margin:5px" onclick="sync_all_orders('<?php echo $ajax_nonce;?>')">Synkronisera alla ordrar</button>
+                                <p>Synkronisera alla godkända ordrar</p>
                             </li>
                         </ul>
                     </div>
@@ -913,17 +911,23 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                     $differences = $wpdb->get_results("SELECT * FROM wp_postmeta where meta_key = '_fortnox_difference_order'");?>
                     <div class="wrap">
                     <?php $this->plugin_options_tabs(); ?>
-                    <ul class="manuella">
+                        <table class="manuella">
                     <?php
                     if ( $differences ){
-                        foreach ( $differences as $difference ){?>
-                            <li>
-                                <p>Order ID: <?php echo $difference->post_id; ?> Diff: <?php echo $difference->meta_value; ?></p>
-                            </li>
-                        <?php    }
+                        foreach ( $differences as $difference ){
+                            if(abs(floatval($difference->meta_value)) > 1){
+                                $order = get_post($difference->post_id);
+                                if($order->post_status != 'wc-failed' || $order->post_status != 'wc-cancelled' ){?>
+                                <tr>
+                                    <td>Order ID: <?php echo $difference->post_id; ?></td>
+                                    <td>Differens: <?php echo $difference->meta_value; ?></td>
+                                </tr>
+                                <?php }
+                            }
+                        }
                     }
                     ?>
-                        </ul>
+                        </table>
                     </div>
                 <?php }
                 else{ ?>
