@@ -18,6 +18,9 @@ class WCF_Contact_XML_Document extends WCF_XML_Document{
      * @return mixed
      */
     public function create($arr){
+
+        $options = get_option('woocommerce_fortnox_general_settings');
+
         $contact = array();
         $contact['Name'] = $arr->billing_first_name . " " . $arr->billing_last_name;
         $contact['Address1'] = $arr->billing_address_1;
@@ -29,7 +32,19 @@ class WCF_Contact_XML_Document extends WCF_XML_Document{
         $contact['DeliveryAddress1'] = $arr->shipping_address_1;
         $contact['DeliveryZipCode'] = $arr->shipping_postcode;
         $contact['DeliveryCity'] = $arr->shipping_city;
-        $contact['PriceList'] = 'A';
+
+        if(!isset($options['default-pricelist'])){
+            $contact['PriceList'] = 'A';
+        }
+        else{
+            if($options['default-pricelist'] != ''){
+                $contact['PriceList'] = $options['default-pricelist'];
+            }
+            else{
+                $contact['PriceList'] = 'A';
+            }
+        }
+
         $root = 'Customer';
         return $this->generate($root, $contact);
     }
