@@ -11,6 +11,7 @@ if(!defined('TESTING')){
 
 class WC_Fortnox_Controller {
 
+    const FORTNOX_ERROR_LOGIN = 1;
     const FORTNOX_ERROR_CODE_ORDER_PRODUCT_NOT_EXIST = 2001302;
     const FORTNOX_ERROR_CODE_ORDER_EXISTS = 2000861;
     const FORTNOX_ERROR_CODE_PRODUCT_NOT_EXIST = 2000513;
@@ -18,6 +19,7 @@ class WC_Fortnox_Controller {
     const FORTNOX_ERROR_CODE_ARTICLE_NUMBER_MISSING = 2001846;
     const FORTNOX_ERROR_CODE_ARTICLE_PRICELIST_ERROR = 2000342;
     const FORTNOX_ERROR_CODE_ARTICLE_ALREADY_TAKEN = 2000013;
+    const FORTNOX_ERROR_CODE_UPDATE_ARTICLE_DOES_NOT_EXIST = 2000762;
     const FORTNOX_ERROR_CODE_ACCESS_TOKEN = 2000311;
     const FORTNOX_ERROR_CODE_VALID_IDENTIFIER = 2000729;
     const FORTNOX_ERROR_XML = 200;
@@ -29,6 +31,20 @@ class WC_Fortnox_Controller {
         'message'=> 'API Nyckeln är ej giltig'
     );
 
+    private $UPDATE_ARTICLE_DOES_NOT_EXIST = array(
+        'error_id' => WC_Fortnox_Controller::FORTNOX_ERROR_CODE_UPDATE_ARTICLE_DOES_NOT_EXIST,
+        'success'=> false,
+        'message'=> 'Produkt med detta artikelnummer finns ej.',
+        'link'=> 'produkt-med-detta-artikelnummer-finns-ej'
+    );
+
+    private $ERROR_CONTACT = array(
+        'error_id' => WC_Fortnox_Controller::FORTNOX_ERROR_CODE_VALID_IDENTIFIER,
+        'success'=> false,
+        'message'=> 'Produkt med detta artikelnummer finns ej.',
+        'link'=> 'produkt-med-detta-artikelnummer-finns-ej'
+    );
+
     private $ERROR_ORDER_NOT_ACTIVATED = array(
         'success'=> false,
         'message'=> 'Ordersynkronisering ej aktiverad'
@@ -37,11 +53,6 @@ class WC_Fortnox_Controller {
     private $ERROR_PRODUCT_NOT_ACTIVATED = array(
         'success'=> false,
         'message'=> 'Produktsynkronisering ej aktiverad'
-    );
-
-    private $ERROR_CONTACT = array(
-        'success'=> false,
-        'message'=> 'Ett fel uppstod vid synkronisering av kund'
     );
 
     private $ERROR_XML = array(
@@ -59,11 +70,37 @@ class WC_Fortnox_Controller {
         'message'=> 'Produkt synkroniserad'
     );
 
+    private $UNVALID_ACCESSTOKEN = array(
+        'error_id' => WC_Fortnox_Controller::FORTNOX_ERROR_CODE_ACCESS_TOKEN,
+        'success'=> false,
+        'message'=> 'Det uppstod ett fel med er Fortnox Accesstoken',
+        'link'=> 'fortnox-accesstoken-fel'
+    );
+
     private $ERROR_LOGIN = array(
+        'error_id' => WC_Fortnox_Controller::FORTNOX_ERROR_LOGIN,
         'success'=> false,
         'message'=> 'Det uppstod ett fel med login till Fortnox. Har du angett Fortnox API-kod under inställningar?',
         'link'=> 'fortnox-accesstoken-fel'
     );
+
+    private $ERROR_ORDER_PRODUCT_NOT_EXIST = array(
+        'error_id' => WC_Fortnox_Controller::FORTNOX_ERROR_CODE_ORDER_PRODUCT_NOT_EXIST,
+        'success'=> false,
+        'message'=> 'Ordern innehåller produkter som ej synkroniserats.',
+        'link'=> 'kunde-inte-hitta-artikel'
+    );
+
+
+    private function errors(){
+        return [
+            $this->UPDATE_ARTICLE_DOES_NOT_EXIST,
+            $this->UNVALID_ACCESSTOKEN,
+            $this->ERROR_LOGIN,
+            $this->ERROR_ORDER_PRODUCT_NOT_EXIST,
+            $this->ERROR_CONTACT,
+        ];
+    }
 
     /**
      * Sends contact to Fortnox API
@@ -89,7 +126,6 @@ class WC_Fortnox_Controller {
                 return $customerNumber;
             }
             return $this->send_order_to_fortnox($orderId, $customerNumber);
-
         }
         else{
             return $this->ERROR_API_KEY;
@@ -114,8 +150,6 @@ class WC_Fortnox_Controller {
 
         //fetch Order
         $order = new WC_Order($orderId);
-        logthis("ORDER");
-        logthis(print_r($order, true));
 
         //Init API
         $apiInterface = new WCF_API();
@@ -374,23 +408,24 @@ class WC_Fortnox_Controller {
         return $this->SUCCESS_ORDER;
     }
 
-    private function handle_error($response, $link = null){
+    private function handle_error($response){
 
-        if($link){
-            $arr = array(
-                'success'=> false,
-                'message'=> 'Felkod: ' .$response['Code'] . ' Meddelande: ' . $response['Message'],
-                'link'=> $link,
-            );
+        $errors = $this->errors();
+
+        foreach($errors as $error){
+            if($response['Code'] == $error['error_id']){
+                return array(
+                    'success'=> false,
+                    'message'=> 'Felkod: ' .$response['Code'] . ' Meddelande: ' . $error['message'],
+                    'link'=> $error['link'],
+                );
+            }
         }
-        else{
-            $arr = array(
+
+        return $arr = array(
                 'success'=> false,
                 'message'=> 'Felkod: ' .$response['Code'] . ' Meddelande: ' . $response['Message']
-            );
-        }
-
-        return $arr;
+        );
     }
 
     private function set_order_as_synced($order_id){

@@ -18,6 +18,9 @@ class WCF_Contact_XML_Document extends WCF_XML_Document{
      * @return mixed
      */
     public function create($arr){
+
+        $options = get_option('woocommerce_fortnox_general_settings');
+
         $contact = array();
         $contact['Name'] = $arr->billing_first_name . " " . $arr->billing_last_name;
         $contact['Address1'] = $arr->billing_address_1;

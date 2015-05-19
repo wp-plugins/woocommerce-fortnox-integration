@@ -196,3 +196,12 @@ function set_product_as_unsynced_callback() {
     delete_post_meta($_POST['product_id'], '_is_synced_to_fortnox');
     die(); // this is required to return a proper result
 }
+
+add_action( 'wp_ajax_clear_accesstoken', 'clear_accesstoken_callback' );
+
+function clear_accesstoken_callback() {
+
+    global $wpdb; // this is how you get access to the database
+    delete_option('fortnox_access_token');
+    die(); // this is required to return a proper result
+}

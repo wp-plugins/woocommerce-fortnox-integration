@@ -4,7 +4,7 @@
  * Plugin URI: http://plugins.svn.wordpress.org/woocommerce-fortnox-integration/
  * Description: A Fortnox 3 API Interface. Synchronizes products, orders and more to fortnox.
  * Also fetches inventory from fortnox and updates WooCommerce
- * Version: 2.01
+ * Version: 2.03
  * Author: Advanced WP-Plugs
  * Author URI: http://wp-plugs.com
  * License: GPL2
@@ -29,7 +29,7 @@ if ( ! function_exists( 'logthis' ) ) {
                 $fileobject = fopen('/tmp/testlog.log', 'a');
             }
 
-            if(is_array($msg || is_object($msg))){
+            if(is_array($msg) || is_object($msg)){
                 fwrite($fileobject,print_r($msg, true));
             }
             else{
@@ -58,7 +58,6 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 
     load_plugin_textdomain( 'wc_fortnox_extended', false, dirname( plugin_basename( __FILE__ ) ) . '/' );
     if ( ! class_exists( 'WCFortnoxExtended' ) ) {
-
 
         include_once("fortnox3-ajax-callbacks.php");
 
@@ -145,7 +144,6 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
              * Adds Fortnox Column to listing
              *
              * @access public
-             * @param $columns
              * @return mixed
              */
             public function display_admin_notice() {
@@ -435,6 +433,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
             public function product_meta_box_add(){
                 add_meta_box( 'fortnox-product-meta-box-id', 'Fortnox', array( $this, 'fortnox_product_meta_box_cb'), 'product', 'normal', 'high' );
             }
+
             /**
              * Adds admin menu
              *
@@ -603,7 +602,6 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                 add_settings_field( 'woocommerce-fortnox-default-pricelist', 'Prislista', array( &$this, 'field_option_text' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'default-pricelist', 'desc' => 'Standard är prislita A om inget anges') );
             }
 
-
             /**
              * WooCommerce Manual Actions Settings
              *
@@ -617,7 +615,6 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                 register_setting( $this->manual_action_key, $this->manual_action_key );
             }
 
-
             /**
              * WooCommerce Start Actions
              *
@@ -630,7 +627,6 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                 $this->plugin_settings_tabs[$this->start_action_key] = 'Välkommen!';
                 register_setting( $this->start_action_key, $this->start_action_key );
             }
-
 
             /**
              * WooCommerce Fortnox Order Settings
@@ -839,6 +835,10 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                             <li class="full">
                                 <button type="button" class="button" title="Synkronisera alla ordrar" style="margin:5px" onclick="sync_all_orders('<?php echo $ajax_nonce;?>')">Synkronisera alla ordrar</button>
                                 <p>Synkronisera alla godkända ordrar</p>
+                            </li>
+                            <li class="full">
+                                <button type="button" class="button" title="Radera accesstoken" style="margin:5px" onclick="clear_accesstoken('<?php echo $ajax_nonce;?>')">Radera accesstoken</button>
+                                <p>Radera accesstoken</p>
                             </li>
                         </ul>
                     </div>

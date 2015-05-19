@@ -74,7 +74,6 @@ function manual_diff_sync_orders(nonce) {
     });
 }
 
-
 function update_fortnox_inventory(nonce) {
     var data = {
         action: 'update_fortnox_inventory',
@@ -198,10 +197,19 @@ function sync_product(productId, nonce) {
             jQuery('#ajax-fortnox-notification')
                 .removeClass('updated')
                 .addClass('error');
+            if(response['link']){
+                jQuery('#ajax-fortnox-message').append('<a href="http://wp-plugs.com/woocommerce-fortnox/' + response['link'] + '"> Se info</a>');
+            }
         }
         else{
             jQuery('#post-productId');
         }
+        window.setTimeout(function(){
+
+            // Move to a new location or you can do something else
+            window.location.reload();
+
+        }, 5000);
 
     }, 'json');
 }
@@ -244,9 +252,16 @@ function set_product_as_unsynced(productId, nonce) {
         security: nonce,
         product_id: productId
     };
-    var ajax_response;
     jQuery.post(ajaxurl, data, function(response) {
        window.location.reload();
     });
+}
 
+function clear_accesstoken(nonce) {
+    var data = {
+        action: 'clear_accesstoken',
+        security: nonce
+    };
+    jQuery.post(ajaxurl, data, function(response) {
+    });
 }
