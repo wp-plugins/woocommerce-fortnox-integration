@@ -20,8 +20,8 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
      */
     public function create($arr, $customerNumber){
 
-        $orderOptions = $options = get_option('woocommerce_fortnox_order_settings');
-        $options = get_option('woocommerce_fortnox_general_settings');
+        $orderOptions = get_option('woocommerce_fortnox_order_settings');
+        $freight_options = get_option('woocommerce_fortnox_freight_settings');
 
         $root = 'Order';
         $order['DocumentNumber'] = $arr->id;
@@ -41,6 +41,15 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
         $order['DeliveryCity'] = $arr->shipping_city;
         $order['DeliveryCountry'] = $this->countries[$arr->shipping_country];
         $order['DeliveryZipCode'] =  $arr->shipping_postcode;
+
+        $shipping_method = reset($arr->get_shipping_methods());
+        if(!empty($shipping_method)){
+            if(!empty($shipping_method['method_id'])){
+                if(isset($freight_options[$shipping_method['method_id']])){
+                    $order['WayOfDelivery'] = $freight_options[$shipping_method['method_id']];
+                }
+            }
+        }
 
         if(isset($arr->billing_company) && $arr->billing_company != ''){
             $order['CustomerName'] = $arr->billing_company;

@@ -93,13 +93,13 @@ class WC_Fortnox_Controller {
 
 
     private function errors(){
-        return [
+        return array(
             $this->UPDATE_ARTICLE_DOES_NOT_EXIST,
             $this->UNVALID_ACCESSTOKEN,
             $this->ERROR_LOGIN,
             $this->ERROR_ORDER_PRODUCT_NOT_EXIST,
             $this->ERROR_CONTACT,
-        ];
+        );
     }
 
     /**
@@ -384,8 +384,9 @@ class WC_Fortnox_Controller {
      * PRIVATE FUNCTIONS
      ***********************************************************************************************************/
     private function clean_str($sku){
-        $sku = preg_replace('/\s+/', '', $sku);
-        $sku = str_replace('.', '', $sku);
+        logthis($sku);
+        $sku = preg_replace(array('/å/','/ä/','/ö/','/Å/','/Ä/','/Ö/', '/\s+/', '.'), array('a','a','o','A','A','O', '_', ''), $sku);
+        logthis($sku);
         return $sku;
     }
 

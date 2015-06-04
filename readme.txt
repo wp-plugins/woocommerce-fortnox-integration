@@ -8,8 +8,8 @@ Author URI:        wp-plugs.com
 Author:            Advanced Wp-Plugs
 Requires at least: 3.8
 Tested up to:      4.2
-Stable tag:        2.03
-Version:           2.03
+Stable tag:        2.05
+Version:           2.05
 
 == Description ==
 
@@ -47,6 +47,7 @@ Requires the WooCommerce plugin. Now works with Fortnox 3
 * VAT
 * Discount
 * DiscountType
+* WayOfDelivery
 
 == Installation ==
 
@@ -74,6 +75,7 @@ http://wp-plugs.com/woocommerce-fortnox/
 
 == Changelog ==
 
-= 2.02 =
-* Bugfixes
+= 2.05 =
+* Funktionalitet för listning av produkter som fattas i Fortnox
+* Fraktalternativ: Fraktmetoden synkas även till ordern. Detta måste dock ställas in under
 

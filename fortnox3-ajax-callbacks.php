@@ -25,7 +25,26 @@ function manual_sync_products_callback() {
     die(); // this is required to return a proper result
 }
 
-add_action( 'wp_ajax_manual_diff_sync_orders', 'wp_ajax_manual_diff_sync_orders_callback' );
+add_action( 'wp_ajax_manual_sync_products', 'manual_sync_products_callback' );
+
+function check_products_diff_callback() {
+    global $wpdb; // this is how you get access to the database
+
+    check_ajax_referer( 'fortnox_woocommerce', 'security' );
+    ob_start();
+    $args = array(
+        'post_type' => 'product', 'product_variation',
+        'orderby' => 'id',
+        'posts_per_page' => -1,
+    );
+    $the_query = new WP_Query( $args );
+    $post_ids = wp_list_pluck( $the_query->posts, 'ID' );
+    ob_end_clean();
+    echo json_encode($post_ids);
+    die(); // this is required to return a proper result
+}
+
+add_action( 'wp_ajax_check_products_diff', 'check_products_diff_callback' );
 
 function wp_ajax_manual_diff_sync_orders_callback() {
     global $wpdb; // this is how you get access to the database
@@ -205,3 +224,45 @@ function clear_accesstoken_callback() {
     delete_option('fortnox_access_token');
     die(); // this is required to return a proper result
 }
+
+add_action( 'wp_ajax_check_diff', 'check_diff_callback' );
+
+function check_diff_callback() {
+    global $wpdb; // this is how you get access to the database
+    include_once("class-fortnox3-api.php");
+
+    check_ajax_referer( 'fortnox_woocommerce', 'security' );
+    $pf = new WC_Product_Factory();
+    $child = $pf->get_product($_POST['product_id']);
+    $sku = $child->get_sku();
+    $apiInterface = new WCF_API();
+    $article = $apiInterface->get_article($sku);
+
+    if($sku === NULL){
+        echo json_encode(array(
+            'success'=> false,
+            'product_id'=> $_POST['product_id'],
+            'sku'=> 'Inget artikelnummer',
+            'title' => $child->get_title()
+        ));
+    }
+    else if(array_key_exists('Error', $article)){
+        echo json_encode(array(
+            'success'=> false,
+            'product_id'=> $_POST['product_id'],
+            'sku'=> $sku,
+            'title' => $child->get_title()
+        ));
+    }
+    else{
+        echo json_encode(array(
+            'success'=> true,
+            'product_id'=> $_POST['product_id'],
+            'sku'=> $sku,
+            'title' => $child->get_title()
+        ));
+    }
+
+    die(); // this is required to return a proper result
+}
+

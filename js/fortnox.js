@@ -97,7 +97,6 @@ function missing_list(nonce) {
         action: 'missing_list',
         security: nonce
     };
-    alert('Synkroniseringen kan ta lång tid beroende på hur många produkters lagesaldo som ska importeras. Ett meddelande visas på denna sida när synkroniseringen är klar.');
     jQuery.post(ajaxurl, data, function(response) {
         alert(response);
     });
@@ -141,14 +140,30 @@ function sync_all_orders(nonce) {
 
 }
 
-function test_connection(nonce) {
+function check_products_diff(nonce) {
     var data = {
-        action: 'test_connection',
+        action: 'check_products_diff',
         security: nonce
     };
 
     jQuery.post(ajaxurl, data, function(response) {
-        alert(response);
+        var products = JSON.parse(response);
+        jQuery('#ajax-fortnox-notification').show();
+        var missing = 0;
+        for (index = 0; index < products.length; ++index) {
+            try{
+                var resp = JSON.parse(check_diff(products[index], nonce));
+                jQuery('#ajax-fortnox-message').html('WooCommerce Fortnox: Behandlar produkt ' + (index + 1) + ' av ' + products.length + '<br> Antal saknade: ' + missing);
+
+                if(resp['success'] == false){
+                    missing++;
+                    jQuery('#ajax-fortnox-notification').append('<p id="ajax-error-fortnox-message" class="error">' + resp['title'] + '; ' + resp['sku'] + '; ' + resp['product_id'] + '</p>');
+                }
+            }
+            catch(err) {
+
+            }
+        }
     });
 }
 
@@ -264,4 +279,20 @@ function clear_accesstoken(nonce) {
     };
     jQuery.post(ajaxurl, data, function(response) {
     });
+}
+
+function check_diff(productId, nonce) {
+    var data = {
+        action: 'check_diff',
+        security: nonce,
+        product_id: productId
+    };
+    var ajax_response;
+    ajax_response = jQuery.ajax({
+        type: 'POST',
+        url: ajaxurl,
+        data: data,
+        async:false
+    });
+    return ajax_response.responseText;
 }

@@ -4,7 +4,7 @@
  * Plugin URI: http://plugins.svn.wordpress.org/woocommerce-fortnox-integration/
  * Description: A Fortnox 3 API Interface. Synchronizes products, orders and more to fortnox.
  * Also fetches inventory from fortnox and updates WooCommerce
- * Version: 2.03
+ * Version: 2.05
  * Author: Advanced WP-Plugs
  * Author URI: http://wp-plugs.com
  * License: GPL2
@@ -94,6 +94,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
         class WC_Fortnox_Extended {
 
             private $general_settings_key = 'woocommerce_fortnox_general_settings';
+            private $freight_settings_key = 'woocommerce_fortnox_freight_settings';
             private $accounting_settings_key = 'woocommerce_fortnox_accounting_settings';
             private $order_settings_key = 'woocommerce_fortnox_order_settings';
             private $support_key = 'woocommerce_fortnox_support';
@@ -115,6 +116,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                 add_action( 'admin_init', array( &$this, 'register_woocommerce_fortnox_manual_action' ));
                 add_action( 'admin_init', array( &$this, 'register_woocommerce_fortnox_support' ));
                 add_action( 'admin_init', array( &$this, 'register_woocommerce_fortnox_order_differences' ));
+                add_action( 'admin_init', array( &$this, 'register_woocommerce_fortnox_freight_settings' ));
                 add_action( 'admin_menu', array( &$this, 'add_admin_menus' ) );
                 add_action( 'add_meta_boxes', array( $this, 'order_meta_box_add'));
                 add_action( 'add_meta_boxes', array( $this, 'product_meta_box_add'));
@@ -220,7 +222,6 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
              * Adds Fortnox Column to listing
              *
              * @access public
-             * @param $columns
              * @return mixed
              */
             function synchronize_bulk_admin_footer() {
@@ -603,6 +604,29 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
             }
 
             /**
+             * WooCommerce Fortnox General Settings
+             *
+             * @access public
+             * @param void
+             * @return void
+             */
+            function register_woocommerce_fortnox_freight_settings() {
+
+                $this->plugin_settings_tabs[$this->freight_settings_key] = 'Avancerade Frakt inställningar';
+                $shipping_methods = WC_Shipping::instance()->load_shipping_methods();
+                register_setting( $this->freight_settings_key, $this->freight_settings_key );
+                add_settings_section( 'section_general', 'Avancerade Frakt inställningar', array( &$this, 'section_general_desc' ), $this->freight_settings_key );
+
+                foreach($shipping_methods as $shipping_method){
+                    //add_settings_field( 'woocommerce-fortnox-api-key', 'API Nyckel', array( &$this, 'field_hidden_option_text' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'api-key', 'desc' => '') );
+
+                    if($shipping_method->enabled == 'yes'){
+                        add_settings_field( 'woocommerce-fortnox-freight-method-' . $shipping_method->id, $shipping_method->title, array( &$this, 'field_option_text' ), $this->freight_settings_key, 'section_general', array ( 'tab_key' => $this->freight_settings_key, 'key' => $shipping_method->id, 'desc' => '') );
+                    }
+                }
+            }
+
+            /**
              * WooCommerce Manual Actions Settings
              *
              * @access public
@@ -820,9 +844,9 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                                 <button type="button" class="button" title="Uppdatera lagersaldo från Fortnox" style="margin:5px" onclick="update_fortnox_inventory('<?php echo $ajax_nonce;?>')">Uppdatera lagersaldo från Fortnox</button>
                                 <p>Uppdatera lagersaldo från Fortnox. Om ni har många produkter kan det ta ett tag.</p>
                             </li>
-                            <li class="full" style="display: none;">
-                                <button type="button" class="button" title="Visa diff lista" style="margin:5px" onclick="missing_list('<?php echo $ajax_nonce;?>')">DiffLista</button>
-                                <p>Visa diff-lista</p>
+                            <li class="full">
+                                <button type="button" class="button" title="Visa diff lista" style="margin:5px" onclick="check_products_diff('<?php echo $ajax_nonce;?>')">Lista produkter</button>
+                                <p>Listar produkter som fattas i Fortnox</p>
                             </li>
                             <li class="full" style="display: none;">
                                 <button type="button" class="button" title="Visa diff lista" style="margin:5px" onclick="clean_sku('<?php echo $ajax_nonce;?>')">Rensa SKU-nummer</button>
@@ -904,6 +928,17 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                             </li>
                         <?php } ?>
                         </ul>
+                    </div>
+                <?php }
+                else if($tab == $this->freight_settings_key){ ?>
+                    <div class="wrap">
+                        <?php $this->plugin_options_tabs(); ?>
+                        <form method="post" action="options.php">
+                            <?php wp_nonce_field( 'update-options' ); ?>
+                            <?php settings_fields( $tab ); ?>
+                            <?php do_settings_sections( $tab ); ?>
+                            <?php submit_button(); ?>
+                        </form>
                     </div>
                 <?php }
                 else if($tab == $this->differences_key){
