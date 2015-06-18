@@ -1,0 +1,25 @@
+.fortnox-status {
+    background: none;
+    position: relative;
+    display: block;
+}
+.fortnox-status::before {
+    background: none;
+    font-size: 1.4em;
+    font-family: WooCommerce;
+    font-variant: normal;
+    font-weight: 400;
+    left: 0;
+    line-height: 1;
+    position: absolute;
+    text-transform: none;
+    top: 0;
+}
+.fortnox-status.completed::before {
+    content: "\e015";
+    color: #2ea2cc;
+}
+.fortnox-status.not-completed::before {
+    content: "\e013";
+    color: #a00;
+}
