@@ -42,7 +42,7 @@ class WCF_Database_Interface{
      */
     public function create_unsynced_order($orderId){
         global $wpdb;
-        $wpdb->query("INSERT INTO wcf_orders VALUES (NULL, ".mysql_real_escape_string($orderId).", 0)");
+        $wpdb->query("INSERT INTO wcf_orders VALUES (NULL, ".$orderId.", 0)");
         return true;
     }
 
@@ -55,7 +55,7 @@ class WCF_Database_Interface{
      */
     public function create_customer($email){
         global $wpdb;
-        $wpdb->query("INSERT INTO wcf_customers VALUES (NULL, 0,'".mysql_real_escape_string($email)."')");
+        $wpdb->query("INSERT INTO wcf_customers VALUES (NULL, 0,'".$email."')");
         return $wpdb->insert_id;
     }
 
@@ -74,7 +74,7 @@ class WCF_Database_Interface{
         if(array_key_exists('CustomerNumber', $customer) && array_key_exists('Email', $customer)){
             if(!is_array($customer['CustomerNumber']) && !is_array($customer['Email'])){
 
-                $wpdb->query("INSERT INTO wcf_customers VALUES (NULL, '".mysql_real_escape_string($customer['CustomerNumber'])."', '".mysql_real_escape_string($customer['Email'])."')");
+                $wpdb->query("INSERT INTO wcf_customers VALUES (NULL, '".$customer['CustomerNumber']."', '".$customer['Email']."')");
                 return $wpdb->insert_id;
             }
         }
@@ -89,7 +89,7 @@ class WCF_Database_Interface{
      */
     public function get_customer_by_email($email){
         global $wpdb;
-        return $wpdb->get_results("SELECT * from wcf_customers WHERE email = '". mysql_real_escape_string($email) ."'");
+        return $wpdb->get_results("SELECT * from wcf_customers WHERE email = '". $email ."';");
     }
 
     /**
