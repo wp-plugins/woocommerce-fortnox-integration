@@ -4,7 +4,7 @@
  * Plugin URI: http://plugins.svn.wordpress.org/woocommerce-fortnox-integration/
  * Description: A Fortnox 3 API Interface. Synchronizes products, orders and more to fortnox.
  * Also fetches inventory from fortnox and updates WooCommerce
- * Version: 2.05
+ * Version: 2.06
  * Author: Advanced WP-Plugs
  * Author URI: http://wp-plugs.com
  * License: GPL2
@@ -615,7 +615,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                 $this->plugin_settings_tabs[$this->freight_settings_key] = 'Avancerade Fraktinställningar';
                 $shipping_methods = WC_Shipping::instance()->load_shipping_methods();
                 register_setting( $this->freight_settings_key, $this->freight_settings_key );
-                add_settings_section( 'section_general', 'Avancerade Fraktinställningar', array( &$this, 'section_general_desc' ), $this->freight_settings_key );
+                add_settings_section( 'section_general', 'Avancerade Fraktinställningar', array( &$this, 'section_freight_desc' ), $this->freight_settings_key );
 
                 foreach($shipping_methods as $shipping_method){
                     //add_settings_field( 'woocommerce-fortnox-api-key', 'API Nyckel', array( &$this, 'field_hidden_option_text' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'api-key', 'desc' => '') );
@@ -704,6 +704,16 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
              * @return void
              */
             function section_general_desc() { echo 'Här anges grundinställningar för Fortnoxkopplingen och här kan man styra vilka delar som ska synkas till Fortnox'; }
+
+            /**
+             * The description for the general section
+             *
+             * @access public
+             * @param void
+             * @return void
+             */
+            function section_freight_desc() { echo 'Här anges hur de olika fraktalternativen ska mappas i Fortnox'; }
+
 
             /**
              * The description for the accounting section
