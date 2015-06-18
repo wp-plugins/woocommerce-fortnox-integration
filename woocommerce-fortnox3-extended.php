@@ -612,10 +612,10 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
              */
             function register_woocommerce_fortnox_freight_settings() {
 
-                $this->plugin_settings_tabs[$this->freight_settings_key] = 'Avancerade Frakt inställningar';
+                $this->plugin_settings_tabs[$this->freight_settings_key] = 'Avancerade Fraktinställningar';
                 $shipping_methods = WC_Shipping::instance()->load_shipping_methods();
                 register_setting( $this->freight_settings_key, $this->freight_settings_key );
-                add_settings_section( 'section_general', 'Avancerade Frakt inställningar', array( &$this, 'section_general_desc' ), $this->freight_settings_key );
+                add_settings_section( 'section_general', 'Avancerade Fraktinställningar', array( &$this, 'section_general_desc' ), $this->freight_settings_key );
 
                 foreach($shipping_methods as $shipping_method){
                     //add_settings_field( 'woocommerce-fortnox-api-key', 'API Nyckel', array( &$this, 'field_hidden_option_text' ), $this->general_settings_key, 'section_general', array ( 'tab_key' => $this->general_settings_key, 'key' => 'api-key', 'desc' => '') );

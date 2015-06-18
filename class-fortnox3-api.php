@@ -450,11 +450,24 @@ class WCF_API{
      * Creates a HttpRequest for fetching all customerand appends the given XML to the request and sends it to Fortnox
      *
      * @access public
-     * @return bool
+     * @return array
      */
     public function get_inventory(){
         logthis("GET INVENTORY REQUEST");
-        return $this->make_get_request($this->build_url("articles/?limit=500"));
+        $response = $this->make_get_request($this->build_url("articles/?limit=500"));
+        $articles = $response['ArticleSubset'];
+        if($response['@attributes']['TotalPages'] > 1){
+
+            $currentPage = $response['@attributes']['CurrentPage'];
+            $totalPages = $response['@attributes']['TotalPages'];
+
+            for($i = $currentPage + 1; $i <= $totalPages; $i++){
+                $response = $this->make_get_request($this->build_url("articles/?limit=500&page=" . $i));
+                $articles = array_merge($articles, $response['ArticleSubset']);
+            }
+        }
+        logthis(print_r($articles, true));
+        return $articles;
     }
 
     /**

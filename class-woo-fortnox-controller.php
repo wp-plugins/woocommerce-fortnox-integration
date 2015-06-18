@@ -18,6 +18,7 @@ class WC_Fortnox_Controller {
     const FORTNOX_ERROR_CODE_PRODUCT_PRICE_EXIST = 2000762;
     const FORTNOX_ERROR_CODE_ARTICLE_NUMBER_MISSING = 2001846;
     const FORTNOX_ERROR_CODE_ARTICLE_PRICELIST_ERROR = 2000342;
+    const FORTNOX_ERROR_CODE_ARTICLE_PRICE_ERROR = 2000517;
     const FORTNOX_ERROR_CODE_ARTICLE_ALREADY_TAKEN = 2000013;
     const FORTNOX_ERROR_CODE_UPDATE_ARTICLE_DOES_NOT_EXIST = 2000762;
     const FORTNOX_ERROR_CODE_ACCESS_TOKEN = 2000311;
@@ -437,7 +438,7 @@ class WC_Fortnox_Controller {
 
     private function handle_pricelist_error($priceResponse, $product, $productDoc, $apiInterface){
         if(array_key_exists('Code', $priceResponse)){
-            if((int)$priceResponse['Code'] == WC_Fortnox_Controller::FORTNOX_ERROR_CODE_ARTICLE_PRICELIST_ERROR){
+            if((int)$priceResponse['Code'] == WC_Fortnox_Controller::FORTNOX_ERROR_CODE_ARTICLE_PRICELIST_ERROR || (int)$priceResponse['Code'] == WC_Fortnox_Controller::FORTNOX_ERROR_CODE_ARTICLE_PRICE_ERROR){
                 $productPriceXml = $productDoc->create_price($product);
                 $apiInterface->create_product_price_request($productPriceXml);
                 return true;
@@ -571,8 +572,7 @@ class WC_Fortnox_Controller {
         }
 
         //fetch all articles
-        $inventory = $apiInterface->get_inventory();
-        $articles = $inventory['ArticleSubset'];
+        $articles = $apiInterface->get_inventory();
 
         $pf = new WC_Product_Factory();
         $product = null;

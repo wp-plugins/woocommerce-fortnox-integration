@@ -51,6 +51,12 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
             }
         }
 
+        if($arr->payment_method == 'klarna_checkout'){
+            $order['ExternalInvoiceReference1'] =  get_post_meta($arr->id,'_klarna_order_reservation', true);
+        }
+
+        logthis("PAYMENT");
+        logthis($arr->payment_method);
         if(isset($arr->billing_company) && $arr->billing_company != ''){
             $order['CustomerName'] = $arr->billing_company;
             $order['YourReference'] = $arr->billing_first_name . " " . $arr->billing_last_name;
