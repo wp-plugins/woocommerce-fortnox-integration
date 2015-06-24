@@ -586,8 +586,15 @@ class WC_Fortnox_Controller {
                 continue;
             }
 
-            if(!$product)
+            if(!$product || null === $product){
                 continue;
+            }
+
+            if($product instanceof WC_Product_Variation){
+                if($product->parent == ''){
+                    continue;
+                }
+            }
 
             if($article['QuantityInStock'] > 0){
                 logthis('IN STOCK');

@@ -126,7 +126,7 @@ function update_fortnox_inventory_callback() {
     check_ajax_referer( 'fortnox_woocommerce', 'security' );
     ob_start();
     $controller = new WC_Fortnox_Controller();
-    $message = $controller->run_manual_inventory_cron_job();
+    $message = $controller->run_inventory_cron_job();
     ob_end_clean();
     echo $message;
     die(); // this is required to return a proper result

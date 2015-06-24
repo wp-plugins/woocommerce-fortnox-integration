@@ -53,7 +53,6 @@ function manual_diff_sync_orders(nonce) {
         action: 'manual_diff_sync_orders',
         security: nonce
     };
-    alert('Synkroniseringen kan ta lång tid beroende på hur många produkter som ska exporteras. Ett meddelande visas på denna sida när synkroniseringen är klar.');
     jQuery.post(ajaxurl, data, function(response) {
 
         var orders = JSON.parse(response);

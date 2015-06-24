@@ -8,8 +8,8 @@ Author URI:        wp-plugs.com
 Author:            Advanced Wp-Plugs
 Requires at least: 3.8
 Tested up to:      4.2
-Stable tag:        2.05
-Version:           2.05
+Stable tag:        2.08
+Version:           2.08
 
 == Description ==
 
