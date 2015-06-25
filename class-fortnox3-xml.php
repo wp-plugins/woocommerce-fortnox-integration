@@ -29,6 +29,7 @@ class WCF_XML_Document {
             'DeliveryAddress2',
             'Phone1',
             'Phone2',
+            'ExternalInvoiceReference1',
         );
 
         $this->countries = array(
