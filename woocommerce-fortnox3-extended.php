@@ -4,7 +4,7 @@
  * Plugin URI: http://plugins.svn.wordpress.org/woocommerce-fortnox-integration/
  * Description: A Fortnox 3 API Interface. Synchronizes products, orders and more to fortnox.
  * Also fetches inventory from fortnox and updates WooCommerce
- * Version: 2.08
+ * Version: 2.081
  * Author: Advanced WP-Plugs
  * Author URI: http://wp-plugs.com
  * License: GPL2
@@ -873,6 +873,10 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                             <li class="full">
                                 <button type="button" class="button" title="Radera accesstoken" style="margin:5px" onclick="clear_accesstoken('<?php echo $ajax_nonce;?>')">Radera accesstoken</button>
                                 <p>Radera accesstoken</p>
+                            </li>
+                            <li class="full">
+                                <button type="button" class="button" title="Rensa kunddatabas" style="margin:5px" onclick="clean_customer_table('<?php echo $ajax_nonce;?>')">Rensa kunddatabas</button>
+                                <p>Den funktion rensar enbart pluginets tabell. Tar enbart bort felaktiga värden.</p>
                             </li>
                         </ul>
                     </div>

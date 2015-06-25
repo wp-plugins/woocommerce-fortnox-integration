@@ -295,3 +295,21 @@ function check_diff(productId, nonce) {
     });
     return ajax_response.responseText;
 }
+
+function clean_customer_table(nonce) {
+    var data = {
+        action: 'clean_customer_table',
+        security: nonce
+    };
+    jQuery.post(ajaxurl, data, function(response) {
+        response = JSON.parse(response);
+        jQuery('#ajax-fortnox-notification').show();
+        console.log(response);
+        if(response['success'] == false){
+            jQuery('#ajax-fortnox-notification').append('<p id="ajax-error-fortnox-message" class="error">' + response['message'] + '</p>');
+        }
+        else{
+            jQuery('#ajax-fortnox-message').html(response['message']);
+        }
+    });
+}

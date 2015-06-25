@@ -266,3 +266,39 @@ function check_diff_callback() {
     die(); // this is required to return a proper result
 }
 
+add_action( 'wp_ajax_clean_customer_table', 'clean_customer_table_callback' );
+
+function clean_customer_table_callback() {
+    global $wpdb; // this is how you get access to the database
+    include_once("class-fortnox3-database-interface.php");
+    logthis('clean_customer_table_callback');
+    check_ajax_referer( 'fortnox_woocommerce', 'security' );
+    $databaseInterface = new WCF_Database_Interface();
+    $customer_emails = $databaseInterface->clean_customer_table();
+
+    if($customer_emails){
+        logthis($customer_emails);
+        $message = 'Tabell rensad.';
+        if(is_array($customer_emails)){
+            $message .= 'För att undvika dubbletter, ta bort dessa kunder i er Fortnox: ';
+            foreach($customer_emails as $email){
+                logthis($email);
+                $message .= $email->email . ', ';
+            }
+            $message = substr($message, 0, strlen($message) - 2);
+        }
+        echo json_encode(array(
+            'success'=> true,
+            'message'=> $message,
+        ));
+    }
+    else{
+        echo json_encode(array(
+            'success'=> false,
+            'message'=> 'Tabell rensad.',
+        ));
+    }
+
+    die(); // this is required to return a proper result
+}
+

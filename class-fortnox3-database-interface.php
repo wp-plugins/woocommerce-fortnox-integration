@@ -106,9 +106,28 @@ class WCF_Database_Interface{
         return true;
     }
 
+    /**
+     * Truncates wcf_customers table
+     *
+     * @access public
+     * @return bool
+     */
     public function reset_database(){
         global $wpdb;
         $wpdb->query("DELETE FROM wcf_customers;");
         return true;
+    }
+
+    /**
+     * Cleans wcf_customers table
+     *
+     * @access public
+     * @return bool
+     */
+    public function clean_customer_table(){
+        global $wpdb;
+        $customers_to_delete = $wpdb->get_results("SELECT email FROM wcf_customers WHERE customer_number = 0 OR customer_number = 'Array';");
+        $wpdb->query("DELETE FROM wcf_customers WHERE customer_number = 0 OR customer_number = 'Array';");
+        return $customers_to_delete;
     }
 }
