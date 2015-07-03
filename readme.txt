@@ -8,8 +8,8 @@ Author URI:        wp-plugs.com
 Author:            Advanced Wp-Plugs
 Requires at least: 3.8
 Tested up to:      4.2
-Stable tag:        2.082
-Version:           2.082
+Stable tag:        2.09
+Version:           2.09
 
 == Description ==
 
@@ -75,6 +75,6 @@ http://wp-plugs.com/woocommerce-fortnox/
 
 == Changelog ==
 
-= 2.082 =
-* Fix för bugg i Fortnox
+= 2.09 =
+* Buggfix
 
