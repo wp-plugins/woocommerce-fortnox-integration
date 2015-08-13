@@ -7,16 +7,16 @@ Tags:              WooCommerce, Order, E-Commerce, Accounting, sync, Fortnox, Cu
 Author URI:        wp-plugs.com
 Author:            Advanced Wp-Plugs
 Requires at least: 3.8
-Tested up to:      4.0
-Stable tag:        1.0
-Version:           1.3.1
+Tested up to:      4.2
+Stable tag:        2.095
+Version:           2.095
 
 == Description ==
 
 Completely integrates your WooCommerce customers and orders to your Fortnox CRM and Fortnox accounting software.
 Requires the WooCommerce plugin. Now works with Fortnox 3
 
-<iframe src="//player.vimeo.com/video/107836260" width="500" height="281" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+[vimeo http://vimeo.com/107836260]
 
 = Data export to Fortnox =
 
@@ -47,10 +47,11 @@ Requires the WooCommerce plugin. Now works with Fortnox 3
 * VAT
 * Discount
 * DiscountType
+* WayOfDelivery
 
 == Installation ==
 
-<iframe src="//player.vimeo.com/video/107836260" width="500" height="281" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+[vimeo http://vimeo.com/107836260]
 
 1. Install WooCommerce Fortnox Integration either via the WordPress.org plugin directory, or by uploading the files to your server
 2. Activate the plugin in your Wordpress Admin and go to the admin panel Setting -> WooCommerce Fortnox Integration.
@@ -60,15 +61,11 @@ Requires the WooCommerce plugin. Now works with Fortnox 3
 
 == Screenshots ==
 
-*General settings*
-/assets/Screenshot-01.jpg
+1. General settings
 
-*Order setting*
-/assets/Screenshot-0102.jpg
+2. Order settings
 
-*Support*
-Read the FAQ or business hours mail support except weekends and holidays.
-/assets/Screenshot-0103.jpg
+3. Support - Read the FAQ or business hours mail support except weekends and holidays.
 
 == Frequently Asked Questions ==
 
@@ -78,7 +75,6 @@ http://wp-plugs.com/woocommerce-fortnox/
 
 == Changelog ==
 
-= 1.3.1 =
-* Bug fixes with export data
-* Direct support in plugin admin view
-* Video guide in plugin admin view
+= 2.095 =
+* Buggfixes
+
