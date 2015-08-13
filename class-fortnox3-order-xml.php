@@ -90,11 +90,13 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
             $pf = new WC_Product_Factory();
 
             //if variable product there might be a different SKU
+            $is_variation = false;
             if(empty($item['variation_id'])){
                 $productId = $item['product_id'];
             }
             else{
                 $productId = $item['variation_id'];
+                $is_variation = true;
             }
 
             $product = $pf->get_product($productId);
@@ -106,7 +108,7 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
                 $invoicerow['ArticleNumber'] = $product->get_sku();
             }
 
-            $invoicerow['Description'] = $item['name'];
+            $invoicerow['Description'] = $this->get_item_name($item, $product, $is_variation);
             $invoicerow['Unit'] = 'st';
             $invoicerow['DeliveredQuantity'] = $item['qty'];
             $invoicerow['OrderedQuantity'] = $item['qty'];
@@ -166,6 +168,45 @@ class WCF_Order_XML_Document extends WCF_XML_Document{
      */
     private function get_product_price($product){
         return floatval($product['line_total']);
+    }
+
+    /**
+     * Sums up price and tax from order line
+     *
+     * @access private
+     * @param mixed $item
+     * @param mixed $product
+     * @param mixed $is_variation
+     * @return float
+     */
+    private function get_item_name($item, $product, $is_variation){
+        if(!$is_variation)
+            return $this->truncate_over_fifty($item['name']);
+
+        $attribute_keys = array();
+        $attributes = $product->get_attributes();
+        foreach($attributes as $k =>$v){
+            if($v['is_variation'] == 1){
+                array_push($attribute_keys, $k);
+            }
+        }
+        if(count($attribute_keys) > 0){
+            $str = '';
+            foreach($attribute_keys as $k){
+                $str .= $item[$k];
+            }
+            return $this->truncate_over_fifty($item['name'] . ' - ' . $str);
+        }
+        else{
+            return $this->truncate_over_fifty($item['name']);
+        }
+    }
+
+    private function truncate_over_fifty($str){
+        if(strlen($str) > 49){
+            return substr($str, 0, 49);
+        }
+        return $str;
     }
 
     /**

@@ -415,6 +415,7 @@ class WCF_API{
      * Creates a HttpRequest for an article for given SKU
      *
      * @access public
+     * @param $sku
      * @return mixed
      */
     public function get_article($sku){

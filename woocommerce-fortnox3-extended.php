@@ -4,7 +4,7 @@
  * Plugin URI: http://plugins.svn.wordpress.org/woocommerce-fortnox-integration/
  * Description: A Fortnox 3 API Interface. Synchronizes products, orders and more to fortnox.
  * Also fetches inventory from fortnox and updates WooCommerce
- * Version: 2.09
+ * Version: 2.095
  * Author: Advanced WP-Plugs
  * Author URI: http://wp-plugs.com
  * License: GPL2
@@ -167,13 +167,10 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
              */
             function custom_bulk_action() {
 
-                // ...
-                logthis("BULK");
                 // 1. get the action
                 $wp_list_table = _get_list_table('WP_Posts_List_Table');
                 $action = $wp_list_table->current_action();
 
-                logthis($action);
                 if(!($action == 'bulk_order_fortnox_synchronize' || $action == 'bulk_product_fortnox_synchronize')){
                     return;
                 }
@@ -187,7 +184,6 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                     case 'bulk_order_fortnox_synchronize':
                         foreach( $post_ids as $post_id ) {
                             $ret = $controller->send_contact_to_fortnox($post_id);
-                            logthis(print_r($ret, true));
                             if(!$ret['success']){
                                 wp_die( __('Fel vid synkronisering av order ' . $post_id . ' ' . $ret['message']) );
                             }
@@ -197,10 +193,8 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
                         $post_type = 'shop_order';
                         break;
                     case 'bulk_product_fortnox_synchronize':
-                        logthis("PRDO");
                         foreach( $post_ids as $post_id ) {
                             $ret = $controller->send_product_to_fortnox($post_id);
-                            logthis(print_r($ret, true));
                             if(!$ret['success']){
                                 wp_die( __('Fel vid synkronisering av produkt ' . $post_id . ' ' . $ret['message']) );
                             }
@@ -327,12 +321,10 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
              *
              * @access public
              * @param $columns
-             * @return void
+             * @return mixed
              */
             public function fortnox_product_columns_head($columns){
                 $new_columns = (is_array($columns)) ? $columns : array();
-                //unset( $new_columns['order_actions'] );
-                logthis(print_r($columns,true));
 
                 $new_columns['fortnox_product_synchronized'] = '<span class="center">Fortnox</span>';
                 $new_columns['fortnox_synchronize'] = '<span class="center">Synkronisera</span>';

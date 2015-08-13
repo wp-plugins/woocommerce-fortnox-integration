@@ -21,6 +21,7 @@ class WCF_Product_XML_Document extends WCF_XML_Document{
         $root = 'Article';
         $productNode = array();
         $productNode['Description'] = $product->get_title();
+        $productNode['StockGoods'] = true;
         $productNode['QuantityInStock'] = $product->get_stock_quantity();
         $productNode['Unit'] = 'st';
         $productNode['ArticleNumber'] = $product->get_sku();
@@ -41,6 +42,7 @@ class WCF_Product_XML_Document extends WCF_XML_Document{
         $productNode = array();
         $productNode['Description'] = $product->get_title();
         $productNode['ArticleNumber'] = $product->get_sku();
+        $productNode['StockGoods'] = true;
         $productNode['QuantityInStock'] = $product->managing_stock() ? $product->get_stock_quantity() : 0;
         $productNode['Unit'] = 'st';
         return $this->generate($root, $productNode);

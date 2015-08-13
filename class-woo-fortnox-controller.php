@@ -254,8 +254,6 @@ class WC_Fortnox_Controller {
                 $product = $pf->get_product($productId);
 
                 if($product->has_child()){
-                    logthis("HAS CHILD");
-                    logthis($options['do-not-sync-children']);
                     if($options['do-not-sync-children'] == 'off' || !isset($options['do-not-sync-children'])){
                         //sync children
                         foreach($product->get_children() as $childId){
@@ -385,9 +383,7 @@ class WC_Fortnox_Controller {
      * PRIVATE FUNCTIONS
      ***********************************************************************************************************/
     private function clean_str($sku){
-        logthis($sku);
         $sku = preg_replace(array('/å/','/ä/','/ö/','/Å/','/Ä/','/Ö/', '/\s+/', '.'), array('a','a','o','A','A','O', '_', ''), $sku);
-        logthis($sku);
         return $sku;
     }
 
@@ -578,7 +574,14 @@ class WC_Fortnox_Controller {
         $product = null;
         foreach($articles as $article){
             //Query DB for id by SKU
-            $query = new WP_Query( "post_type=product&meta_key=_sku&meta_value=" . $article['ArticleNumber'] );
+
+            $args = array(
+                'post_type' => array('product', 'product_variation'),
+                'orderby' => 'id',
+                'meta_key' => '_sku',
+                'meta_value' => $article['ArticleNumber'],
+            );
+            $query = new WP_Query( $args );
             if($query->post_count == 1){
                 $product = $pf->get_product($query->posts[0]->ID);
             }
@@ -612,7 +615,7 @@ class WC_Fortnox_Controller {
 
     /**
      * Fetches product stock for every product in Woo from Fortnox
-     *
+     * DEPRECATED
      * @return bool
      */
     public function run_manual_inventory_cron_job(){
@@ -859,7 +862,7 @@ class WC_Fortnox_Controller {
         $contactDoc = new WCF_Contact_XML_Document();
         $contactXml = $contactDoc->create($order);
 
-        if(empty($customer)){
+        if(empty($customer) || $customer[0]->customer_number == 0){
             logthis("CREATING CUSTOMER");
             $customerId = $databaseInterface->create_customer($order->billing_email);
 
